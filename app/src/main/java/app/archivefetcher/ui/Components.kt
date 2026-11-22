@@ -9,6 +9,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -172,8 +173,8 @@ fun AppButton(
             color = content,
             fontWeight = FontWeight.SemiBold,
             fontSize = 14.sp,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
+            maxLines = 1, modifier = Modifier.scrollIfLong(),
+            overflow = TextOverflow.Clip,
         )
     }
 }
@@ -238,8 +239,8 @@ fun Chip(label: String, selected: Boolean, focusRequester: FocusRequester? = nul
                 color = if (selected) Palette.Accent else Palette.Text,
                 fontSize = 13.sp,
                 fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
+                maxLines = 1, modifier = Modifier.scrollIfLong(),
+                overflow = TextOverflow.Clip,
             )
         }
     }
@@ -258,9 +259,9 @@ fun ScreenFrame(
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             if (onBack != null) IconAction(AppIcons.Back, stringResource(R.string.back), onBack)
             Column(Modifier.weight(1f)) {
-                Text(title, style = AppType.Title, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(title, style = AppType.Title, maxLines = 1, modifier = Modifier.scrollIfLong(), overflow = TextOverflow.Clip)
                 if (subtitle != null) {
-                    Text(subtitle, style = AppType.Caption, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(subtitle, style = AppType.Caption, maxLines = 1, modifier = Modifier.scrollIfLong(), overflow = TextOverflow.Clip)
                 }
             }
             if (actions != null) {
@@ -519,6 +520,18 @@ fun formatBytes(bytes: Long): String {
     return if (unit == 0) "${value.toInt()} B" else "%.1f %s".format(value, units[unit])
 }
 
+/**
+ * A one-line text that does not fit scrolls slowly sideways after a short pause, so the whole of it can be read;
+ * text that fits stays still. Use with `maxLines = 1` and `overflow = TextOverflow.Clip`.
+ */
+fun Modifier.scrollIfLong(): Modifier = basicMarquee(
+    iterations = Int.MAX_VALUE,
+    initialDelayMillis = MARQUEE_DELAY_MS,
+    repeatDelayMillis = MARQUEE_DELAY_MS,
+    velocity = 32.dp,
+)
+
 const val DURATION_SHORT = 140
 const val DURATION_MEDIUM = 260
 private const val DISABLED_ALPHA = 0.45f
+private const val MARQUEE_DELAY_MS = 1500

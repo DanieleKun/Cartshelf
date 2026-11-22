@@ -59,6 +59,8 @@ fun SettingsScreen(vm: MainViewModel) {
     var extract by remember { mutableStateOf(prefs.extractZips) }
     var deleteZip by remember { mutableStateOf(prefs.deleteZipAfterExtract) }
     var playlists by remember { mutableStateOf(prefs.createPlaylists) }
+    var covers by remember { mutableStateOf(prefs.showCovers) }
+    var updates by remember { mutableStateOf(prefs.checkUpdates) }
     var verify by remember { mutableStateOf(prefs.verifyDownloads) }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -116,6 +118,10 @@ fun SettingsScreen(vm: MainViewModel) {
                 Hint(stringResource(R.string.playlists_hint))
                 OnOffRow(stringResource(R.string.verify_downloads), verify) { verify = it; prefs.verifyDownloads = it }
                 Hint(stringResource(R.string.verify_hint))
+            }
+            Section(stringResource(R.string.settings_list)) {
+                OnOffRow(stringResource(R.string.show_covers), covers) { covers = it; prefs.showCovers = it }
+                Hint(stringResource(R.string.covers_hint))
             }
             Section(stringResource(R.string.settings_background)) {
                 StatusRow(stringResource(R.string.background_notifications), notifications)
@@ -196,6 +202,8 @@ fun SettingsScreen(vm: MainViewModel) {
                     }
                 }
                 AppButton(stringResource(R.string.about_source), { openLink(context, SOURCE_URL) }, Modifier.fillMaxWidth(), icon = AppIcons.Forward)
+                OnOffRow(stringResource(R.string.check_updates), updates) { updates = it; prefs.checkUpdates = it }
+                Hint(stringResource(R.string.check_updates_hint))
                 Hint(SOURCE_URL.removePrefix("https://"))
             }
         }
@@ -250,7 +258,7 @@ private fun applyLanguage(context: Context, prefs: Prefs, code: String) {
 private fun openKeysPage(context: Context) = openLink(context, Prefs.KEYS_PAGE_URL)
 
 /** Opens a web page; on devices without a browser (some handhelds) the link is copied instead. */
-private fun openLink(context: Context, url: String) {
+internal fun openLink(context: Context, url: String) {
     try {
         context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
     } catch (_: ActivityNotFoundException) {

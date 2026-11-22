@@ -50,7 +50,6 @@
     <string name="filters_hint">Scegli più valori in un gruppo per vedere i giochi che ne hanno almeno uno. I gruppi diversi si combinano.</string>
     <string name="files_count">%1$d file</string>
     <string name="selected_summary">%1$d selezionati · %2$s</string>
-    <string name="download_n">Scarica (%1$d)</string>
     <string name="locked_body">Alcuni file si scaricano solo con un account Internet Archive.</string>
     <string name="tag_locked">login</string>
 
@@ -284,4 +283,41 @@
     <string name="about_title">Informazioni</string>
     <string name="about_version">Versione %1$s (%2$d)</string>
     <string name="about_source">Codice sorgente e aggiornamenti su GitHub</string>
+    <string name="gamepad_hint">L1 R1 lettera · X cerca · Y seleziona tutto · Start scarica · Select filtri</string>
+    <string name="quick_one_game">Uno per gioco</string>
+    <string name="quick_no_unfinished">Senza beta e demo</string>
+    <string name="quick_no_unofficial">Senza hack e pirata</string>
+    <string name="filter_versions">Versioni</string>
+    <string name="one_game_hint">Uno per gioco tiene la versione migliore di ogni gioco per la tua lingua: prima quelle nella tua lingua, poi la regione più vicina, poi la revisione più recente. Tutti i suoi dischi restano.</string>
+    <string name="games_count">%1$d giochi</string>
+    <string name="settings_list">Elenco giochi</string>
+    <string name="show_covers">Mostra le copertine</string>
+    <string name="covers_hint">Le immagini arrivano dall\'archivio libretro-thumbnails (lo stesso di RetroArch) e restano salvate sul dispositivo. Se le disattivi, l\'app non contatta quel sito.</string>
+    <string name="check_updates">Avvisami delle nuove versioni</string>
+    <string name="check_updates_hint">Una volta al giorno l\'app legge la pagina pubblica dell\'ultima versione su GitHub. Non viene inviato nulla su di te.</string>
+    <string name="update_title">È disponibile Cartshelf %1$s</string>
+    <string name="update_body">Apri la pagina, scarica l\'APK e installalo sopra questa versione: le impostazioni restano.</string>
+    <string name="update_later">Non ora</string>
+    <string name="update_open">Apri</string>
+    <string name="receive_title">Invia dal telefono</string>
+    <string name="receive_body">Scrivere un indirizzo su una console portatile è scomodo. Avvia la ricezione, apri l\'indirizzo che compare qui nel browser del telefono e lì incolla il link o scegli il file dell\'addon.</string>
+    <string name="receive_start">Avvia la ricezione</string>
+    <string name="receive_stop">Ferma</string>
+    <string name="receive_open_on_phone">Apri questo indirizzo nel browser del telefono:</string>
+    <string name="receive_same_wifi">Il telefono deve essere sulla stessa rete Wi-Fi. La ricezione si ferma quando esci da questa schermata o dopo 15 minuti.</string>
+    <string name="receive_no_network">Questo dispositivo non è collegato a una rete Wi-Fi.</string>
+    <string name="receive_got_url">Indirizzo ricevuto dal telefono: premi Aggiungi per installarlo.</string>
+    <string name="receive_got_file">È arrivato un file addon dal telefono.</string>
+    <string name="receive_discard">Scarta</string>
+    <string name="receive_page_title">Invia un addon a Cartshelf</string>
+    <string name="receive_page_intro">Incolla l\'indirizzo dell\'addon oppure scegli il suo file .json. Lo confermerai sul dispositivo.</string>
+    <string name="receive_page_url">Indirizzo dell\'addon</string>
+    <string name="receive_page_send">Invia</string>
+    <string name="receive_page_file">…oppure scegli il file</string>
+    <string name="receive_page_sent">Inviato. Torna sul dispositivo per confermare.</string>
+    <string name="receive_page_expired">Questo indirizzo non è più valido: avvia di nuovo la ricezione sul dispositivo.</string>
+    <plurals name="discs_count">
+        <item quantity="one">%d disco</item>
+        <item quantity="other">%d dischi</item>
+    </plurals>
 </resources>

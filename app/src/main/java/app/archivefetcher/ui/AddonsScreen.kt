@@ -7,6 +7,11 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -86,6 +91,8 @@ fun AddonsScreen(vm: MainViewModel) {
                 Text(stringResource(R.string.addons_about), style = AppType.Caption)
             }
 
+            FromPhonePanel(vm)
+
             if (addons.isEmpty()) {
                 Text(stringResource(R.string.addons_none), style = AppType.Caption.copy(color = Palette.TextFaint))
             } else {
@@ -98,6 +105,51 @@ fun AddonsScreen(vm: MainViewModel) {
     }
 }
 
+/**
+ * Send an addon from the phone: the device shows a short local address, the phone opens it and pastes a link or
+ * picks the file. The receiver stops as soon as this screen is left.
+ */
+@Composable
+private fun FromPhonePanel(vm: MainViewModel) {
+    DisposableEffect(Unit) { onDispose { vm.stopReceiver() } }
+    Panel(spacing = 10.dp) {
+        Overline(stringResource(R.string.receive_title))
+        val address = vm.receiverAddress
+        when {
+            address != null -> {
+                Text(stringResource(R.string.receive_open_on_phone), style = AppType.Caption)
+                Text(
+                    address,
+                    style = AppType.Title.copy(color = Palette.Accent, fontWeight = FontWeight.Bold),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Palette.SurfaceHigh, RoundedCornerShape(12.dp))
+                        .padding(horizontal = 14.dp, vertical = 12.dp),
+                )
+                Text(stringResource(R.string.receive_same_wifi), style = AppType.Caption.copy(color = Palette.TextFaint))
+                AppButton(stringResource(R.string.receive_stop), { vm.stopReceiver() }, Modifier.fillMaxWidth(), icon = AppIcons.Close)
+            }
+            else -> {
+                Text(stringResource(R.string.receive_body), style = AppType.Caption)
+                if (vm.receiverUnavailable) {
+                    Banner(stringResource(R.string.receive_no_network), icon = AppIcons.Warning, tint = Palette.Warning)
+                }
+                AppButton(stringResource(R.string.receive_start), { vm.startReceiver() }, Modifier.fillMaxWidth(), icon = AppIcons.Download)
+            }
+        }
+        if (vm.receivedAddon != null) {
+            Banner(
+                stringResource(R.string.receive_got_file),
+                icon = AppIcons.File,
+                tint = Palette.Info,
+                action = stringResource(R.string.add_short),
+                onAction = { vm.installReceived() },
+            )
+            AppButton(stringResource(R.string.receive_discard), { vm.discardReceived() }, Modifier.fillMaxWidth())
+        }
+    }
+}
+
 @Composable
 private fun AddonCard(addon: InstalledAddon, onUpdate: () -> Unit, onRemove: () -> Unit, busy: Boolean) {
     val manifest = addon.manifest
@@ -105,7 +157,7 @@ private fun AddonCard(addon: InstalledAddon, onUpdate: () -> Unit, onRemove: () 
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Monogram(manifest.name, size = 40.dp)
             Column(Modifier.weight(1f)) {
-                Text(manifest.name, style = AppType.Heading, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(manifest.name, style = AppType.Heading, maxLines = 1, modifier = Modifier.scrollIfLong(), overflow = TextOverflow.Clip)
                 Text(
                     stringResource(R.string.addon_summary, manifest.version, manifest.consoleCount, manifest.collectionCount),
                     style = AppType.Caption,

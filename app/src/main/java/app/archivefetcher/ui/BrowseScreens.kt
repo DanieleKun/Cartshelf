@@ -34,6 +34,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import app.archivefetcher.R
 import app.archivefetcher.addon.CatalogCategory
+import app.archivefetcher.data.UpdateInfo
+import androidx.compose.ui.platform.LocalContext
 
 /** The app's mark: a cartridge-orange tile with the download arrow. */
 @Composable
@@ -46,6 +48,7 @@ fun BrandMark(size: Dp = 40.dp) {
 /** Home: search across everything, then the platforms (Nintendo, Sony, Sega…) that the installed addons provide. */
 @Composable
 fun CategoriesScreen(vm: MainViewModel) {
+    val context = LocalContext.current
     val catalog by vm.catalog.collectAsState()
     val later by vm.later.collectAsState()
     val indexed by vm.indexed.collectAsState()
@@ -60,7 +63,7 @@ fun CategoriesScreen(vm: MainViewModel) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             BrandMark()
             Column(Modifier.weight(1f)) {
-                Text(stringResource(R.string.app_name), style = AppType.Title, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(stringResource(R.string.app_name), style = AppType.Title, maxLines = 1, modifier = Modifier.scrollIfLong(), overflow = TextOverflow.Clip)
                 Text(
                     if (catalog.isEmpty) stringResource(R.string.home_subtitle_empty)
                     else pluralStringResource(R.plurals.consoles_count, consoleCount, consoleCount),
@@ -75,6 +78,8 @@ fun CategoriesScreen(vm: MainViewModel) {
             IconAction(AppIcons.Puzzle, stringResource(R.string.addons), { vm.open(Screen.Addons) }, highlighted = catalog.isEmpty)
             IconAction(AppIcons.Tune, stringResource(R.string.settings), { vm.open(Screen.Settings) })
         }
+
+        vm.updateInfo?.let { info -> UpdateBanner(info, onOpen = { openLink(context, info.url) }, onDismiss = { vm.dismissUpdate() }) }
 
         if (catalog.isEmpty) {
             EmptyState(
@@ -107,6 +112,24 @@ fun CategoriesScreen(vm: MainViewModel) {
     }
 }
 
+/** A newer version is on GitHub: open its page to download it, or hide the notice for that version. */
+@Composable
+private fun UpdateBanner(info: UpdateInfo, onOpen: () -> Unit, onDismiss: () -> Unit) {
+    Panel(border = Palette.Accent.copy(alpha = 0.45f), spacing = 10.dp) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Icon(AppIcons.Download, contentDescription = null, tint = Palette.Accent, modifier = Modifier.size(22.dp))
+            Column(Modifier.weight(1f)) {
+                Text(stringResource(R.string.update_title, info.version), style = AppType.Label)
+                Text(stringResource(R.string.update_body), style = AppType.Caption)
+            }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            AppButton(stringResource(R.string.update_later), onDismiss, Modifier.weight(1f))
+            AppButton(stringResource(R.string.update_open), onOpen, Modifier.weight(1f), highlighted = true, icon = AppIcons.Forward)
+        }
+    }
+}
+
 /** Looks like a search field; opens the search screen, where the real field is. */
 @Composable
 private fun SearchLauncher(indexed: Int, total: Int, focus: FocusRequester, onClick: () -> Unit) {
@@ -118,13 +141,13 @@ private fun SearchLauncher(indexed: Int, total: Int, focus: FocusRequester, onCl
         ) {
             Icon(AppIcons.Search, contentDescription = null, tint = Palette.Accent, modifier = Modifier.size(22.dp))
             Column(Modifier.weight(1f)) {
-                Text(stringResource(R.string.search_hint_all), style = AppType.Label, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(stringResource(R.string.search_hint_all), style = AppType.Label, maxLines = 1, modifier = Modifier.scrollIfLong(), overflow = TextOverflow.Clip)
                 Text(
                     if (indexed >= total) stringResource(R.string.home_search_ready)
                     else stringResource(R.string.home_search_partial, indexed, total),
                     style = AppType.Caption,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+                    maxLines = 1, modifier = Modifier.scrollIfLong(),
+                    overflow = TextOverflow.Clip,
                 )
             }
         }

@@ -88,6 +88,10 @@ fun buildHttpClient(
         .addNetworkInterceptor(AuthInterceptor(authorization, cookie))
         .dns(PublicDns(allowLocalTestHosts))
         .apply { if (!allowLocalTestHosts) socketFactory(PublicSocketFactory()) }
+        .apply {
+            // Same validation as the platform, plus a retry without the stray old root some servers send.
+            runCatching { ChainTrimmingTrustManager.create() }.getOrNull()?.let { (factory, manager) -> sslSocketFactory(factory, manager) }
+        }
         .followSslRedirects(false)
         .connectTimeout(20, java.util.concurrent.TimeUnit.SECONDS)
         .readTimeout(45, java.util.concurrent.TimeUnit.SECONDS)

@@ -32,6 +32,12 @@ object MultiDisc {
 
     fun hasDiscTag(fileName: String): Boolean = discOf(fileName) != null
 
+    /** [name] without its disc tag, e.g. `Riven (USA) (Disc 2)` → `Riven (USA)`; unchanged when it has none. */
+    fun withoutDiscTag(name: String): String {
+        val match = discTag.find(name) ?: return name
+        return name.removeRange(match.range).replace(Regex("""\s{2,}"""), " ").trim()
+    }
+
     /**
      * Playlists for every game in [names] (the files of one folder) that has at least two discs. Each disc is
      * represented by its best format; a disc whose only files are unplayable (e.g. `.sbi`) is left out.

@@ -28,6 +28,14 @@ import app.archivefetcher.download.LaterMode
 import app.archivefetcher.data.RomFile
 import app.archivefetcher.data.RomNaming
 import app.archivefetcher.data.SearchQuery
+import app.archivefetcher.data.GameEntries
+import app.archivefetcher.data.GameEntry
+import app.archivefetcher.data.Prefs
+import app.archivefetcher.data.RomVariants
+import app.archivefetcher.data.AddonReceiver
+import app.archivefetcher.data.ReceiverPage
+import app.archivefetcher.data.UpdateInfo
+import java.util.Locale
 import app.archivefetcher.download.IndexJobState
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.drop
@@ -74,7 +82,8 @@ data class Library(
     val lastPack: String? = null,
 )
 
-data class VisibleFiles(val files: List<RomFile>, val approximate: Boolean)
+/** [entries] are the [files] as shown: the discs of a multi-disc game folded into one entry. */
+data class VisibleFiles(val files: List<RomFile>, val approximate: Boolean, val entries: List<GameEntry> = GameEntries.group(files))
 
 /** Result of the last add/update/remove on the Addons screen. */
 data class AddonMessage(val text: String, val isError: Boolean)
@@ -91,7 +100,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     var library by mutableStateOf(Library())
         private set
 
-    var filters by mutableStateOf(FileFilters())
+    private var filterState by mutableStateOf(graph.prefs.quickFilters)
+
+    /** The quick switches are saved as they change, so every console opens with the same ones. */
+    var filters: FileFilters
+        get() = filterState
+        set(value) {
+            if (value.oneGamePerTitle != filterState.oneGamePerTitle || value.hideUnfinished != filterState.hideUnfinished ||
+                value.hideUnofficial != filterState.hideUnofficial
+            ) {
+                graph.prefs.quickFilters = value
+            }
+            filterState = value
+        }
     var query by mutableStateOf("")
     var selected by mutableStateOf<Set<String>>(emptySet())
         private set
@@ -139,7 +160,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private var libraryJob: Job? = null
 
+    /**
+     * A newer release on GitHub, shown on the home screen until opened or dismissed. Declared before `init`: the check
+     * there can finish without suspending (already checked today) and assign it during construction.
+     */
+    var updateInfo by mutableStateOf<UpdateInfo?>(null)
+        private set
+
     init {
+        graph.downloads.resumeRestored()
         viewModelScope.launch {
             // Keeps the system schedule in step with the list, including after a restart.
             graph.later.items.collect { graph.laterScheduler.apply(it.isNotEmpty()) }
@@ -152,6 +181,81 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             // Consoles added to the index by the background job become searchable without retyping.
             graph.index.indexed.drop(1).collect { if (searchQuery.isNotBlank()) onSearchQuery(searchQuery) }
         }
+        viewModelScope.launch { updateInfo = graph.updates.check() }
+    }
+
+    override fun onCleared() {
+        receiver.stop()
+        super.onCleared()
+    }
+
+    // ---- New version ---------------------------------------------------------------------------------------
+
+    fun dismissUpdate() {
+        updateInfo?.let(graph.updates::dismiss)
+        updateInfo = null
+    }
+
+    // ---- Addon from the phone ------------------------------------------------------------------------------
+
+    private val receiver = AddonReceiver(viewModelScope)
+
+    /** The address to open on the phone while the receiver runs; null when it is off. */
+    var receiverAddress by mutableStateOf<String?>(null)
+        private set
+
+    /** True when the receiver could not start because the device is not on a local network. */
+    var receiverUnavailable by mutableStateOf(false)
+        private set
+
+    /** An addon file sent from the phone, waiting for the user to confirm it on the device. */
+    var receivedAddon by mutableStateOf<String?>(null)
+        private set
+
+    fun startReceiver() {
+        val page = ReceiverPage(
+            title = graph.texts.get(R.string.receive_page_title),
+            intro = graph.texts.get(R.string.receive_page_intro),
+            urlLabel = graph.texts.get(R.string.receive_page_url),
+            send = graph.texts.get(R.string.receive_page_send),
+            fileLabel = graph.texts.get(R.string.receive_page_file),
+            sent = graph.texts.get(R.string.receive_page_sent),
+            notFound = graph.texts.get(R.string.receive_page_expired),
+        )
+        receiverAddress = receiver.start(page, onStopped = { receiverAddress = null }) { text -> onReceived(text) }
+        receiverUnavailable = receiverAddress == null
+    }
+
+    fun stopReceiver() {
+        receiver.stop()
+        receiverAddress = null
+        receiverUnavailable = false
+    }
+
+    /** An address only fills the form; a file waits for confirmation. Nothing is installed without the user. */
+    private fun onReceived(text: String) {
+        if (text.startsWith("http://") || text.startsWith("https://")) {
+            addonUrl = text.take(MAX_RECEIVED_URL)
+            addonMessage = AddonMessage(graph.texts.get(R.string.receive_got_url), false)
+        } else {
+            receivedAddon = text
+            addonMessage = null
+        }
+    }
+
+    fun installReceived() {
+        val text = receivedAddon ?: return
+        if (addonBusy) return
+        receivedAddon = null
+        runAddonAction {
+            val outcome = graph.addons.installFromText(text)
+            val name = outcome.addon.manifest.name
+            AddonMessage(graph.texts.get(if (outcome.replaced) R.string.addon_updated else R.string.addon_added, name), false)
+        }
+    }
+
+    fun discardReceived() {
+        receivedAddon = null
     }
 
     fun open(screen: Screen) {
@@ -322,7 +426,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun loadLibrary(console: CatalogConsole) {
         libraryJob?.cancel()
-        filters = FileFilters()
+        filters = filters.cleared()
         query = ""
         selected = emptySet()
         val entries = console.entries
@@ -431,8 +535,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun isVisible(file: RomFile, parsed: SearchQuery, fuzzy: Boolean): Boolean =
         filters.matches(file) &&
-            (parsed.isEmpty || (if (fuzzy) parsed.matchesFuzzy(file.searchName) else parsed.matches(file.searchName))) &&
-            !(filters.hidePresent && isPresent(file))
+            (parsed.isEmpty || (if (fuzzy) parsed.matchesFuzzy(file.searchName) else parsed.matches(file.searchName)))
 
     /**
      * Files that pass the filters and the name search. When the name matches nothing exactly, names within a typo or
@@ -441,9 +544,32 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun visibleFiles(files: List<RomFile>): VisibleFiles {
         val parsed = nameQuery
         val exact = files.filter { isVisible(it, parsed, fuzzy = false) }
-        if (exact.isNotEmpty() || parsed.isEmpty || !parsed.canBeFuzzy) return VisibleFiles(exact, approximate = false)
+        if (exact.isNotEmpty() || parsed.isEmpty || !parsed.canBeFuzzy) return visible(exact, approximate = false)
         val close = files.filter { isVisible(it, parsed, fuzzy = true) }
-        return VisibleFiles(close, approximate = close.isNotEmpty())
+        return visible(close, approximate = close.isNotEmpty())
+    }
+
+    /**
+     * "One version per game" picks among what the other filters and the search kept; "hide present" comes after it,
+     * so a game already in the folder disappears instead of being replaced by its next-best version.
+     */
+    private fun visible(files: List<RomFile>, approximate: Boolean): VisibleFiles {
+        val best = if (filters.oneGamePerTitle) RomVariants.bestPerTitle(files, preferredLanguage) else files
+        val kept = if (filters.hidePresent) best.filterNot(::isPresent) else best
+        return VisibleFiles(kept, approximate, GameEntries.group(kept))
+    }
+
+    /** The app's language as a ROM language code ("It", "En"…), used to pick the best version of a game. */
+    val preferredLanguage: String
+        get() {
+            val code = graph.prefs.language.takeUnless { it == Prefs.LANGUAGE_SYSTEM } ?: Locale.getDefault().language
+            return code.take(2).replaceFirstChar { it.uppercase() }
+        }
+
+    /** Selects or clears every file of an entry: all the discs of a multi-disc game at once. */
+    fun toggle(entry: GameEntry) {
+        val keys = entry.files.map { it.key }
+        selected = if (keys.all { it in selected }) selected - keys.toSet() else selected + keys
     }
 
     /** Reads the destination folder of the console again; a folder that does not exist yet simply has nothing in it. */
@@ -614,6 +740,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         const val SEARCH_DEBOUNCE_MS = 250L
         const val SEARCH_LIMIT = 300
         const val STOP_TIMEOUT_MS = 5_000L
+        const val MAX_RECEIVED_URL = 2000
 
         /** Addons are checked again at startup when their stored copy is older than this. */
         const val REFRESH_AFTER_MS = 12L * 60 * 60 * 1000

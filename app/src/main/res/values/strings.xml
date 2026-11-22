@@ -54,7 +54,6 @@
     <string name="filters_hint">Pick several values in a group to see games with any of them. Different groups combine.</string>
     <string name="files_count">%1$d files</string>
     <string name="selected_summary">%1$d selected · %2$s</string>
-    <string name="download_n">Download (%1$d)</string>
     <string name="locked_body">Some files need an Internet Archive account to download.</string>
     <string name="tag_locked">login</string>
 
@@ -295,4 +294,41 @@
     <string name="about_title">About</string>
     <string name="about_version">Version %1$s (%2$d)</string>
     <string name="about_source">Source code and updates on GitHub</string>
+    <string name="gamepad_hint">L1 R1 letter · X search · Y select all · Start download · Select filters</string>
+    <string name="quick_one_game">One per game</string>
+    <string name="quick_no_unfinished">No betas or demos</string>
+    <string name="quick_no_unofficial">No hacks or pirate</string>
+    <string name="filter_versions">Versions</string>
+    <string name="one_game_hint">One per game keeps the best version of each game for your language: first the ones in your language, then the closest region, then the latest revision. All its discs stay.</string>
+    <string name="games_count">%1$d games</string>
+    <string name="settings_list">Game list</string>
+    <string name="show_covers">Show box art</string>
+    <string name="covers_hint">Pictures come from the libretro thumbnails archive (the one RetroArch uses) and are kept on the device. Turned off, the app does not contact that site.</string>
+    <string name="check_updates">Tell me about new versions</string>
+    <string name="check_updates_hint">Once a day the app reads the public page of the latest release on GitHub. Nothing about you is sent.</string>
+    <string name="update_title">Cartshelf %1$s is available</string>
+    <string name="update_body">Open the page, download the APK and install it over this one: your settings stay.</string>
+    <string name="update_later">Not now</string>
+    <string name="update_open">Open</string>
+    <string name="receive_title">Send from your phone</string>
+    <string name="receive_body">Typing an address on a handheld is slow. Start receiving, open the address shown here in your phone browser, and paste the link or pick the addon file there.</string>
+    <string name="receive_start">Start receiving</string>
+    <string name="receive_stop">Stop</string>
+    <string name="receive_open_on_phone">Open this address in your phone browser:</string>
+    <string name="receive_same_wifi">The phone must be on the same Wi-Fi. Receiving stops when you leave this screen or after 15 minutes.</string>
+    <string name="receive_no_network">This device is not on a Wi-Fi network right now.</string>
+    <string name="receive_got_url">Address received from the phone: press Add to install it.</string>
+    <string name="receive_got_file">An addon file arrived from the phone.</string>
+    <string name="receive_discard">Discard</string>
+    <string name="receive_page_title">Send an addon to Cartshelf</string>
+    <string name="receive_page_intro">Paste the addon address, or pick its .json file. You will confirm it on the device.</string>
+    <string name="receive_page_url">Addon address</string>
+    <string name="receive_page_send">Send</string>
+    <string name="receive_page_file">…or pick the file</string>
+    <string name="receive_page_sent">Sent. Go back to the device to confirm.</string>
+    <string name="receive_page_expired">This address is no longer valid: start receiving again on the device.</string>
+    <plurals name="discs_count">
+        <item quantity="one">%d disc</item>
+        <item quantity="other">%d discs</item>
+    </plurals>
 </resources>

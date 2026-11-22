@@ -69,7 +69,7 @@ private fun TaskCard(
             if (task.state == DownloadState.Done) Icon(AppIcons.Check, contentDescription = null, tint = Palette.Success, modifier = Modifier.size(16.dp))
             if (task.state == DownloadState.Failed) Icon(AppIcons.Warning, contentDescription = null, tint = Palette.Danger, modifier = Modifier.size(16.dp))
         }
-        Text(task.fileName, style = AppType.Body, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        Text(task.fileName, style = AppType.Body, maxLines = 3, overflow = TextOverflow.Ellipsis)
         ProgressBar(task.progress, color = if (task.state == DownloadState.Failed) Palette.Danger else if (task.state == DownloadState.Done) Palette.Success else Palette.Accent)
         Text(statusLine(task), style = AppType.Caption.copy(color = color))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {

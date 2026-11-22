@@ -2,8 +2,15 @@ package app.archivefetcher.ui
 
 import android.content.Intent
 import android.net.Uri
+import android.view.InputDevice
+import android.view.KeyEvent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,34 +20,54 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import app.archivefetcher.R
 import app.archivefetcher.addon.ConsoleInfo
 import app.archivefetcher.data.FileFilters
+import app.archivefetcher.data.GameEntry
 import app.archivefetcher.data.RomFile
 import app.archivefetcher.download.DownloadState
 import app.archivefetcher.download.DownloadTask
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /** Resolves the console from the current catalog; it can vanish if its addon is removed while this screen is open. */
@@ -91,13 +118,65 @@ private fun ConsoleContent(vm: MainViewModel, console: ConsoleInfo) {
         tasks.filter { it.consoleName == console.name }.associateBy { it.fileName }
     }
 
+    val toggleAll = {
+        if (vm.selected.isEmpty()) {
+            vm.select(
+                visible.files.filter {
+                    !vm.isPresent(it) && taskByName[it.displayName]?.let { t -> t.isActive || t.state == DownloadState.Done } != true
+                },
+            )
+        } else {
+            vm.clearSelection()
+        }
+    }
+    val download = {
+        if (chosen.isNotEmpty()) {
+            if (!hasDestination) {
+                pendingDownload = chosen
+                picker.launch(null)
+            } else {
+                vm.enqueue(console, chosen)
+            }
+        }
+    }
+
+    // Controller shortcuts: L1/R1 jump between initial letters, X search, Y select all, Start download, Select filters.
+    val gridState = rememberLazyGridState()
+    val jumper = remember { LetterJumper() }
+    val scope = rememberCoroutineScope()
+    val headers = headerCount(vm, library, visible)
+    val gamepad = remember { hasGamepad() }
+
     ScreenFrame(
         title = console.name,
         subtitle = folderName?.let { stringResource(R.string.folder_label, it) } ?: stringResource(R.string.folder_not_set),
         onBack = { vm.back() },
         actions = { IconAction(AppIcons.Folder, stringResource(R.string.folder_choose), { picker.launch(null) }) },
     ) {
-        Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Column(
+            Modifier.fillMaxSize().onPreviewKeyEvent { event ->
+                if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+                when (event.nativeKeyEvent.keyCode) {
+                    KeyEvent.KEYCODE_BUTTON_L1, KeyEvent.KEYCODE_PAGE_UP -> {
+                        jumper.launch(scope) { jumper.jump(visible.entries, forward = false, headers, gridState) }
+                        true
+                    }
+                    KeyEvent.KEYCODE_BUTTON_R1, KeyEvent.KEYCODE_PAGE_DOWN -> {
+                        jumper.launch(scope) { jumper.jump(visible.entries, forward = true, headers, gridState) }
+                        true
+                    }
+                    KeyEvent.KEYCODE_BUTTON_X -> {
+                        scope.launch { searchFocus.requestFocusWhenReady() }
+                        true
+                    }
+                    KeyEvent.KEYCODE_BUTTON_Y -> { toggleAll(); true }
+                    KeyEvent.KEYCODE_BUTTON_START -> { download(); true }
+                    KeyEvent.KEYCODE_BUTTON_SELECT -> { vm.open(Screen.Filters); true }
+                    else -> false
+                }
+            },
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 TextEntry(
                     value = vm.query,
@@ -114,6 +193,16 @@ private fun ConsoleContent(vm: MainViewModel, console: ConsoleInfo) {
                     { vm.open(Screen.Filters) },
                     badge = activeFilters.takeIf { it > 0 }?.toString(),
                     highlighted = activeFilters > 0,
+                )
+            }
+            QuickFilters(vm)
+            if (gamepad) {
+                Text(
+                    stringResource(R.string.gamepad_hint),
+                    style = AppType.Caption.copy(color = Palette.TextFaint),
+                    maxLines = 1,
+                    overflow = TextOverflow.Clip,
+                    modifier = Modifier.scrollIfLong(),
                 )
             }
 
@@ -146,41 +235,111 @@ private fun ConsoleContent(vm: MainViewModel, console: ConsoleInfo) {
                         stringResource(R.string.no_packs),
                         tint = Palette.TextDim,
                     )
-                    else -> FileList(vm, library, visible, taskByName)
+                    else -> FileList(vm, console, library, visible, taskByName, gridState, jumper)
+                }
+                // The letter just jumped to, shown big for a moment.
+                androidx.compose.animation.AnimatedVisibility(jumper.shownLetter != null, enter = fadeIn(), exit = fadeOut(), modifier = Modifier.align(Alignment.Center)) {
+                    Text(
+                        jumper.shownLetter?.toString().orEmpty(),
+                        color = Palette.OnAccent,
+                        fontSize = 40.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.background(Palette.Accent, RoundedCornerShape(20.dp)).padding(horizontal = 28.dp, vertical = 12.dp),
+                    )
                 }
             }
 
             ActionBar(
-                visibleCount = visible.files.size,
+                visibleCount = visible.entries.size,
                 selectedCount = chosen.size,
                 selectedBytes = chosen.sumOf { it.size },
-                onToggleAll = {
-                    if (vm.selected.isEmpty()) {
-                        vm.select(
-                            visible.files.filter {
-                                !vm.isPresent(it) && taskByName[it.displayName]?.let { t -> t.isActive || t.state == DownloadState.Done } != true
-                            },
-                        )
-                    } else {
-                        vm.clearSelection()
-                    }
-                },
+                onToggleAll = toggleAll,
                 notice = vm.notice,
                 onLater = { if (chosen.isNotEmpty()) vm.addLater(console, chosen) },
-                onDownload = {
-                    if (chosen.isNotEmpty()) {
-                        if (!hasDestination) {
-                            pendingDownload = chosen
-                            picker.launch(null)
-                        } else {
-                            vm.enqueue(console, chosen)
-                        }
-                    }
-                },
+                onDownload = download,
             )
         }
     }
 }
+
+/** The three switches people flip most, one tap away above the list; they are remembered for every console. */
+@Composable
+private fun QuickFilters(vm: MainViewModel) {
+    val filters = vm.filters
+    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Chip(stringResource(R.string.quick_one_game), filters.oneGamePerTitle) {
+            vm.filters = filters.copy(oneGamePerTitle = !filters.oneGamePerTitle)
+        }
+        Chip(stringResource(R.string.quick_no_unfinished), filters.hideUnfinished) {
+            vm.filters = filters.copy(hideUnfinished = !filters.hideUnfinished)
+        }
+        Chip(stringResource(R.string.quick_no_unofficial), filters.hideUnofficial) {
+            vm.filters = filters.copy(hideUnofficial = !filters.hideUnofficial)
+        }
+    }
+}
+
+/** Remembers the focused row and moves focus to the first game of the previous or next initial letter. */
+private class LetterJumper {
+    var focusedIndex by mutableIntStateOf(0)
+    var shownLetter by mutableStateOf<Char?>(null)
+    val requesters = HashMap<String, FocusRequester>()
+
+    fun requester(key: String): FocusRequester = requesters.getOrPut(key) { FocusRequester() }
+
+    private var job: Job? = null
+
+    /** A new jump replaces the one still running, so an older one never hides the newer letter. */
+    fun launch(scope: CoroutineScope, block: suspend () -> Unit) {
+        job?.cancel()
+        job = scope.launch { block() }
+    }
+
+    suspend fun jump(entries: List<GameEntry>, forward: Boolean, headers: Int, grid: LazyGridState) {
+        if (entries.isEmpty()) return
+        val from = focusedIndex.coerceIn(0, entries.lastIndex)
+        val letters = entries.map { initialOf(it.title) }
+        val target = if (forward) {
+            (from + 1..entries.lastIndex).firstOrNull { letters[it] != letters[from] } ?: return
+        } else {
+            var start = from
+            while (start > 0 && letters[start - 1] == letters[from]) start--
+            if (start == from && start > 0) {
+                start--
+                while (start > 0 && letters[start - 1] == letters[from - 1]) start--
+            }
+            start
+        }
+        grid.scrollToItem(headers + target)
+        shownLetter = letters[target]
+        requester(entries[target].key).requestFocusWhenReady()
+        focusedIndex = target
+        delay(LETTER_SHOWN_MS)
+        shownLetter = null
+    }
+
+    private fun initialOf(title: String): Char =
+        title.firstOrNull { it.isLetterOrDigit() }?.uppercaseChar()?.takeIf { it.isLetter() } ?: '#'
+
+    private companion object {
+        const val LETTER_SHOWN_MS = 700L
+    }
+}
+
+private fun hasGamepad(): Boolean = InputDevice.getDeviceIds().any { id ->
+    val sources = InputDevice.getDevice(id)?.sources ?: 0
+    sources and InputDevice.SOURCE_GAMEPAD == InputDevice.SOURCE_GAMEPAD
+}
+
+/** Number of items the list shows above the games; jumping by letter scrolls past them. */
+private fun headerCount(vm: MainViewModel, library: Library, visible: VisibleFiles): Int =
+    listOf(
+        library.loading,
+        library.failedPacks.isNotEmpty(),
+        library.hasLocked && !vm.graph.prefs.hasAuth,
+        visible.approximate,
+        visible.entries.isEmpty(),
+    ).count { it }
 
 @Composable
 private fun loadingDetail(library: Library): String {
@@ -191,13 +350,18 @@ private fun loadingDetail(library: Library): String {
 @Composable
 private fun FileList(
     vm: MainViewModel,
+    console: ConsoleInfo,
     library: Library,
     visible: VisibleFiles,
     taskByName: Map<String, DownloadTask>,
+    gridState: LazyGridState,
+    jumper: LetterJumper,
 ) {
+    val covers = vm.graph.prefs.showCovers
     // One column on square and upright screens, more on wide ones so landscape phones and TVs show more files.
     LazyVerticalGrid(
         columns = GridCells.Adaptive(FILE_CELL_MIN_WIDTH),
+        state = gridState,
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -205,7 +369,7 @@ private fun FileList(
         if (library.loading) {
             item(key = "loading", span = { GridItemSpan(maxLineSpan) }) {
                 Panel(spacing = 6.dp) {
-                    Text(loadingDetail(library), style = AppType.Caption, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(loadingDetail(library), style = AppType.Caption, maxLines = 1, modifier = Modifier.scrollIfLong(), overflow = TextOverflow.Clip)
                     ProgressBar(if (library.total > 0) library.loaded.toFloat() / library.total else 0f)
                 }
             }
@@ -229,7 +393,7 @@ private fun FileList(
                 Banner(stringResource(R.string.search_approximate, vm.query))
             }
         }
-        if (visible.files.isEmpty()) {
+        if (visible.entries.isEmpty()) {
             item(key = "empty", span = { GridItemSpan(maxLineSpan) }) {
                 Box(Modifier.fillMaxWidth().padding(vertical = 24.dp)) {
                     EmptyState(
@@ -247,8 +411,17 @@ private fun FileList(
                 }
             }
         }
-        items(visible.files, key = { it.key }) { file ->
-            FileRow(file, selected = file.key in vm.selected, task = taskByName[file.displayName], present = vm.isPresent(file)) { vm.toggle(file) }
+        itemsIndexed(visible.entries, key = { _, entry -> entry.key }) { index, entry ->
+            GameRow(
+                entry = entry,
+                console = console,
+                covers = covers,
+                selected = entry.files.all { it.key in vm.selected },
+                tasks = entry.files.mapNotNull { taskByName[it.displayName] },
+                present = entry.files.all { vm.isPresent(it) },
+                focusRequester = jumper.requester(entry.key),
+                onFocused = { jumper.focusedIndex = index },
+            ) { vm.toggle(entry) }
         }
     }
 }
@@ -258,7 +431,7 @@ private fun FileList(
 private fun FailedPacksCard(library: Library, onRetry: () -> Unit) {
     Panel(border = Palette.Warning.copy(alpha = 0.35f)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            androidx.compose.material3.Icon(AppIcons.Warning, contentDescription = null, tint = Palette.Warning, modifier = Modifier.padding(end = 2.dp))
+            Icon(AppIcons.Warning, contentDescription = null, tint = Palette.Warning, modifier = Modifier.padding(end = 2.dp))
             Text(stringResource(R.string.packs_failed, library.failedPacks.size), style = AppType.Label)
         }
         library.failedPacks.forEach { pack ->
@@ -269,25 +442,52 @@ private fun FailedPacksCard(library: Library, onRetry: () -> Unit) {
     }
 }
 
+/** One game: a single file, or all the discs of a multi-disc release, selected and downloaded together. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun FileRow(file: RomFile, selected: Boolean, task: DownloadTask?, present: Boolean, onClick: () -> Unit) {
-    FocusSurface(onClick, highlighted = selected, modifier = Modifier.fillMaxWidth(), cornerRadius = 14) {
+private fun GameRow(
+    entry: GameEntry,
+    console: ConsoleInfo,
+    covers: Boolean,
+    selected: Boolean,
+    tasks: List<DownloadTask>,
+    present: Boolean,
+    focusRequester: FocusRequester,
+    onFocused: () -> Unit,
+    onClick: () -> Unit,
+) {
+    val file = entry.first
+    val task = mostRelevant(tasks)
+    FocusSurface(
+        onClick,
+        highlighted = selected,
+        modifier = Modifier.fillMaxWidth().onFocusChanged { if (it.isFocused) onFocused() },
+        cornerRadius = 14,
+        focusRequester = focusRequester,
+    ) {
         Row(
             Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             SelectMark(selected)
+            if (covers) GameCover(console.name, file.displayName, entry.title, Modifier.size(COVER_SIZE))
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                Text(file.displayName, style = AppType.Body, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(entry.title, style = AppType.Body, maxLines = 3, overflow = TextOverflow.Ellipsis)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    if (entry.isMultiDisc) {
+                        Pill(pluralStringResource(R.plurals.discs_count, entry.files.size, entry.files.size), Palette.Accent, Palette.AccentSoft)
+                    }
                     Pill(file.format.uppercase())
-                    Pill(formatBytes(file.size))
+                    Pill(formatBytes(entry.totalSize))
                     if (file.languages.isNotEmpty()) Pill(file.languages.joinToString(" "))
                     if (present) Pill(stringResource(R.string.tag_present), Palette.Success, Palette.Success.copy(alpha = 0.12f))
                     if (file.locked) Pill(stringResource(R.string.tag_locked), Palette.Warning, Palette.Warning.copy(alpha = 0.12f))
-                    if (task != null) Pill(rowStatus(task), rowStatusColor(task), rowStatusColor(task).copy(alpha = 0.12f))
+                    if (task != null) {
+                        val done = tasks.count { it.state == DownloadState.Done }
+                        val label = if (entry.isMultiDisc && tasks.size > 1) "${rowStatus(task)} · $done/${entry.files.size}" else rowStatus(task)
+                        Pill(label, rowStatusColor(task), rowStatusColor(task).copy(alpha = 0.12f))
+                    }
                 }
                 if (task != null && (task.state == DownloadState.Running || task.state == DownloadState.Verifying || task.state == DownloadState.Extracting)) {
                     ProgressBar(task.progress, height = 3.dp)
@@ -295,6 +495,15 @@ private fun FileRow(file: RomFile, selected: Boolean, task: DownloadTask?, prese
             }
         }
     }
+}
+
+/** The download worth showing for a row whose discs are in different states: what is happening right now first. */
+private fun mostRelevant(tasks: List<DownloadTask>): DownloadTask? {
+    val order = listOf(
+        DownloadState.Running, DownloadState.Verifying, DownloadState.Extracting, DownloadState.Queued,
+        DownloadState.Paused, DownloadState.Failed, DownloadState.Done,
+    )
+    return tasks.minByOrNull { order.indexOf(it.state) }
 }
 
 @Composable
@@ -326,7 +535,7 @@ private fun ActionBar(
     onDownload: () -> Unit,
 ) {
     SelectionBar(
-        if (selectedCount == 0) notice ?: stringResource(R.string.files_count, visibleCount)
+        if (selectedCount == 0) notice ?: stringResource(R.string.games_count, visibleCount)
         else stringResource(R.string.selected_summary, selectedCount, formatBytes(selectedBytes)),
     ) {
         AppButton(
@@ -349,3 +558,4 @@ private fun ActionBar(
 }
 
 private val FILE_CELL_MIN_WIDTH = 320.dp
+private val COVER_SIZE = 52.dp

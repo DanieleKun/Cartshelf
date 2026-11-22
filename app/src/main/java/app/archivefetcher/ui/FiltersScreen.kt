@@ -61,6 +61,16 @@ fun FiltersScreen(vm: MainViewModel) {
             verticalArrangement = Arrangement.spacedBy(18.dp),
         ) {
             Text(stringResource(R.string.filters_hint), style = AppType.Caption)
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Overline(stringResource(R.string.filter_versions))
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    val f = vm.filters
+                    Chip(stringResource(R.string.quick_one_game), f.oneGamePerTitle) { vm.filters = f.copy(oneGamePerTitle = !f.oneGamePerTitle) }
+                    Chip(stringResource(R.string.quick_no_unfinished), f.hideUnfinished) { vm.filters = f.copy(hideUnfinished = !f.hideUnfinished) }
+                    Chip(stringResource(R.string.quick_no_unofficial), f.hideUnofficial) { vm.filters = f.copy(hideUnofficial = !f.hideUnofficial) }
+                }
+                Text(stringResource(R.string.one_game_hint), style = AppType.Caption.copy(color = Palette.TextFaint))
+            }
             FilterGroup(
                 stringResource(R.string.filter_language), languages, vm.filters.languages,
                 { languageLabel(it) }, first.takeIf { firstGroup == 0 },

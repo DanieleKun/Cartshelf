@@ -17,7 +17,14 @@ import app.archivefetcher.download.LaterRunner
 import app.archivefetcher.download.LaterScheduler
 import app.archivefetcher.source.SourceRegistry
 import app.archivefetcher.source.WebSources
+import app.archivefetcher.data.UpdateChecker
+import app.archivefetcher.download.DownloadQueueStore
+import coil3.ImageLoader
+import coil3.disk.DiskCache
+import coil3.network.okhttp.OkHttpNetworkFetcherFactory
+import coil3.request.crossfade
 import java.io.File
+import okio.Path.Companion.toOkioPath
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -35,7 +42,7 @@ class Graph(app: Application) {
 
     /** Every kind of source an addon can point to; the Internet Archive is one of them. */
     val sources = SourceRegistry(archive, listOf(WebSources(client, allowLocalHttp = BuildConfig.DEBUG)))
-    val downloads = DownloadManager(app, client, prefs, texts)
+    val downloads = DownloadManager(app, client, prefs, texts, DownloadQueueStore(File(app.filesDir, "downloads.json")))
     val folders = LibraryFolders(app, prefs)
     val later = LaterStore(File(app.filesDir, "later.json"))
     val index = IndexStore(File(app.filesDir, "index"))
@@ -44,6 +51,20 @@ class Graph(app: Application) {
     val laterRunner = LaterRunner(folders, downloads, sources, later, appScope)
     val laterScheduler = LaterScheduler(app, prefs)
     val indexScheduler = IndexScheduler(app)
+    val updates = UpdateChecker(client, prefs)
+
+    /** Box art loader: the app's own HTTP client (https only, public hosts only) and a 200 MB disk cache. */
+    val imageLoader: ImageLoader by lazy {
+        ImageLoader.Builder(app)
+            .components { add(OkHttpNetworkFetcherFactory(callFactory = { client })) }
+            .diskCache { DiskCache.Builder().directory(File(app.cacheDir, "covers").toOkioPath()).maxSizeBytes(COVER_CACHE_BYTES).build() }
+            .crossfade(true)
+            .build()
+    }
+
+    private companion object {
+        const val COVER_CACHE_BYTES = 200L * 1024 * 1024
+    }
 }
 
 class App : Application() {

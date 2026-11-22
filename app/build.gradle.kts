@@ -17,8 +17,8 @@ android {
         minSdk = 24
         targetSdk = 35
         // The release workflow passes the tag as -PversionName=1.2.3 and the run number as -PversionCode=N.
-        versionCode = (findProperty("versionCode") as String?)?.toIntOrNull() ?: 3
-        versionName = (findProperty("versionName") as String?) ?: "1.1.0"
+        versionCode = (findProperty("versionCode") as String?)?.toIntOrNull() ?: 4
+        versionName = (findProperty("versionName") as String?) ?: "1.2.0"
     }
 
     signingConfigs {
@@ -71,6 +71,8 @@ dependencies {
     implementation(libs.okhttp)
     implementation(libs.serialization.json)
     implementation(libs.coroutines.android)
+    implementation(libs.coil.compose)
+    implementation(libs.coil.network.okhttp)
 
     testImplementation(libs.junit)
     testImplementation(libs.okhttp.mockwebserver)

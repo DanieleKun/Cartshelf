@@ -124,8 +124,8 @@ fun TextEntry(
                         shown,
                         color = if (value.isBlank()) Palette.TextFaint else Palette.Text,
                         fontSize = 14.sp,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
+                        maxLines = 1, modifier = Modifier.scrollIfLong(),
+                        overflow = TextOverflow.Clip,
                     )
                 }
             }

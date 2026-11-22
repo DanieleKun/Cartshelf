@@ -64,6 +64,9 @@ data class RomFile(
     val regionGroups: List<String> = RomNaming.regionGroupsOf(regions)
     val languageGroups: List<String> = RomNaming.languageGroupsOf(languages)
 
+    /** Beta/demo or pirate/hack markers, read once from the name. */
+    val flags: Set<RomVariants.Flag> by lazy(LazyThreadSafetyMode.PUBLICATION) { RomVariants.flagsOf(displayName) }
+
     companion object {
         /** Builds a file from stored fields, deriving regions and languages from its name. */
         fun create(

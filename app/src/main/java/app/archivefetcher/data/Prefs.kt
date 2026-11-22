@@ -63,6 +63,47 @@ class Prefs(context: Context) {
         get() = sp.getBoolean(KEY_EXTRACT, true)
         set(value) = sp.edit { putBoolean(KEY_EXTRACT, value) }
 
+    /** The quick list switches (one version per game, no betas/demos, no pirate/hacks), kept between consoles. */
+    var quickFilters: FileFilters
+        get() = FileFilters(
+            oneGamePerTitle = sp.getBoolean(KEY_ONE_GAME, false),
+            hideUnfinished = sp.getBoolean(KEY_HIDE_UNFINISHED, false),
+            hideUnofficial = sp.getBoolean(KEY_HIDE_UNOFFICIAL, false),
+        )
+        set(value) = sp.edit {
+            putBoolean(KEY_ONE_GAME, value.oneGamePerTitle)
+            putBoolean(KEY_HIDE_UNFINISHED, value.hideUnfinished)
+            putBoolean(KEY_HIDE_UNOFFICIAL, value.hideUnofficial)
+        }
+
+    /** Show box art from the libretro thumbnails project next to the games. */
+    var showCovers: Boolean
+        get() = sp.getBoolean(KEY_COVERS, true)
+        set(value) = sp.edit { putBoolean(KEY_COVERS, value) }
+
+    /** Look for a newer version on GitHub at most once a day. */
+    var checkUpdates: Boolean
+        get() = sp.getBoolean(KEY_CHECK_UPDATES, true)
+        set(value) = sp.edit { putBoolean(KEY_CHECK_UPDATES, value) }
+
+    var lastUpdateCheck: Long
+        get() = sp.getLong(KEY_LAST_UPDATE_CHECK, 0)
+        set(value) = sp.edit { putLong(KEY_LAST_UPDATE_CHECK, value) }
+
+    /** The newest release found on GitHub at the last check, and its page. */
+    var latestVersion: String
+        get() = sp.getString(KEY_LATEST_VERSION, "").orEmpty()
+        set(value) = sp.edit { putString(KEY_LATEST_VERSION, value) }
+
+    var latestUrl: String
+        get() = sp.getString(KEY_LATEST_URL, "").orEmpty()
+        set(value) = sp.edit { putString(KEY_LATEST_URL, value) }
+
+    /** A version the user chose not to hear about again. */
+    var dismissedVersion: String
+        get() = sp.getString(KEY_DISMISSED_VERSION, "").orEmpty()
+        set(value) = sp.edit { putString(KEY_DISMISSED_VERSION, value) }
+
     /** Write a `.m3u` playlist next to the discs of multi-disc games. */
     var createPlaylists: Boolean
         get() = sp.getBoolean(KEY_PLAYLISTS, true)
@@ -161,6 +202,15 @@ class Prefs(context: Context) {
         private const val KEY_LOGIN_EMAIL = "ia_login_email"
         private const val KEY_EXTRACT = "extract_zips"
         private const val KEY_PLAYLISTS = "create_m3u"
+        private const val KEY_ONE_GAME = "filter_one_game"
+        private const val KEY_HIDE_UNFINISHED = "filter_hide_unfinished"
+        private const val KEY_HIDE_UNOFFICIAL = "filter_hide_unofficial"
+        private const val KEY_COVERS = "show_covers"
+        private const val KEY_CHECK_UPDATES = "check_updates"
+        private const val KEY_LAST_UPDATE_CHECK = "last_update_check"
+        private const val KEY_DISMISSED_VERSION = "dismissed_version"
+        private const val KEY_LATEST_VERSION = "latest_version"
+        private const val KEY_LATEST_URL = "latest_url"
         private const val KEY_DELETE_ZIP = "delete_zip_after_extract"
     }
 }

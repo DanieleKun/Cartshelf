@@ -70,8 +70,8 @@ fun LibraryFolderPicker(vm: MainViewModel, firstFocus: FocusRequester? = null) {
                 Text(
                     folderName ?: stringResource(R.string.library_none),
                     style = AppType.Label,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+                    maxLines = 1, modifier = Modifier.scrollIfLong(),
+                    overflow = TextOverflow.Clip,
                 )
                 Text(
                     stringResource(if (folderName == null) R.string.library_choose_hint else R.string.library_change_hint),

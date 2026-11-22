@@ -150,7 +150,7 @@ private fun HitRow(hit: IndexHit, consoleName: String, selected: Boolean, onClic
         ) {
             SelectMark(selected)
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                Text(hit.file.displayName, style = AppType.Body, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(hit.file.displayName, style = AppType.Body, maxLines = 3, overflow = TextOverflow.Ellipsis)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Pill(consoleName, Palette.Accent, Palette.AccentSoft)
                     Pill(formatBytes(hit.file.size))

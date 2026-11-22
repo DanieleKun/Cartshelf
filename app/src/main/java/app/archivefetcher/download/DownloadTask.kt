@@ -1,7 +1,11 @@
 package app.archivefetcher.download
 
+import kotlinx.serialization.Serializable
+
 enum class DownloadState { Queued, Running, Verifying, Extracting, Paused, Done, Failed }
 
+/** One download of the queue; serializable so the queue can be saved (see [DownloadQueueStore]). */
+@Serializable
 data class DownloadTask(
     val id: String,
     val consoleName: String,

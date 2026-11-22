@@ -31,6 +31,8 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.sample
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -49,9 +51,10 @@ class DownloadManager(
     private val client: OkHttpClient,
     private val prefs: Prefs,
     private val texts: Texts,
+    private val store: DownloadQueueStore? = null,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val _tasks = MutableStateFlow<List<DownloadTask>>(emptyList())
+    private val _tasks = MutableStateFlow(store?.load().orEmpty())
     val tasks: StateFlow<List<DownloadTask>> = _tasks.asStateFlow()
 
     private val lock = Any()
@@ -60,6 +63,23 @@ class DownloadManager(
     private val playlistLock = Mutex()
     private val jobs = HashMap<String, Job>()
     private val calls = HashMap<String, Call>()
+
+    // After every field above: restoring may start downloads, which uses them.
+    init {
+        if (store != null) {
+            // At most one write every SAVE_DELAY_MS, always with the latest list, also while downloads report progress.
+            @OptIn(FlowPreview::class)
+            scope.launch { _tasks.sample(SAVE_DELAY_MS).collect { store.save(it) } }
+        }
+    }
+
+    /**
+     * Continues the downloads a restart interrupted, from their partial files. Called when the app's screen opens,
+     * not when Android starts the process in the background, so the download service can start in the foreground.
+     */
+    fun resumeRestored() {
+        if (_tasks.value.any { it.state == DownloadState.Queued }) pump()
+    }
 
     /** [laterKey] links the task to its entry in the "download later" list, which is removed once the file is done. */
     fun enqueue(
@@ -402,6 +422,7 @@ class DownloadManager(
 
     companion object {
         private const val PART_SUFFIX = ".part"
+        private const val SAVE_DELAY_MS = 500L
         private const val BUFFER_SIZE = 64 * 1024
         private const val PROGRESS_INTERVAL_NS = 300_000_000L
         private const val MAX_RETRIES = 4
