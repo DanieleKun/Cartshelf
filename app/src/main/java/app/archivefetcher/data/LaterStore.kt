@@ -20,14 +20,16 @@ data class LaterItem(
     val locked: Boolean = false,
     val format: String = "",
     val packTitle: String = "",
+    /** Download address of files that do not come from the Internet Archive. */
+    val url: String? = null,
 ) {
     val key: String get() = "$identifier/$path"
 
-    fun toRomFile(): RomFile = RomFile.create(identifier, path, size, format, packTitle, locked, md5)
+    fun toRomFile(): RomFile = RomFile.create(identifier, path, size, format, packTitle, locked, md5, url)
 
     companion object {
         fun of(consoleId: String, consoleName: String, file: RomFile) = LaterItem(
-            consoleId, consoleName, file.identifier, file.path, file.size, file.md5, file.locked, file.format, file.packTitle,
+            consoleId, consoleName, file.identifier, file.path, file.size, file.md5, file.locked, file.format, file.packTitle, file.url,
         )
     }
 }

@@ -6,9 +6,9 @@ Keep the keystore and its passwords outside the repository and back them up.
 ## Build a signed APK locally
 
 ```
-export RELEASE_KEYSTORE_PATH=/path/to/archive-fetcher.jks
+export RELEASE_KEYSTORE_PATH=/path/to/cartshelf.jks
 export RELEASE_KEYSTORE_PASSWORD=...
-export RELEASE_KEY_ALIAS=archivefetcher
+export RELEASE_KEY_ALIAS=cartshelf
 export RELEASE_KEY_PASSWORD=...
 ./gradlew testDebugUnitTest assembleRelease -PversionName=1.0.0 -PversionCode=1
 ```
@@ -21,11 +21,11 @@ unsigned and cannot be installed. Attach the APK to a GitHub Release named after
 
 Add these repository secrets (Settings → Secrets and variables → Actions):
 
-- `RELEASE_KEYSTORE_BASE64` – the keystore, base64 encoded (`base64 -w0 archive-fetcher.jks`)
+- `RELEASE_KEYSTORE_BASE64` – the keystore, base64 encoded (`base64 -w0 cartshelf.jks`)
 - `RELEASE_KEYSTORE_PASSWORD`
 - `RELEASE_KEY_ALIAS`
 - `RELEASE_KEY_PASSWORD`
 
 Then pushing a tag `v*` runs the tests, builds the signed APK with `versionName` taken from the tag and the workflow
-run number as `versionCode`, and attaches `archive-fetcher-<version>.apk` to the release. Without the secrets the
+run number as `versionCode`, and attaches `cartshelf-<version>.apk` to the release. Without the secrets the
 workflow only reports that signing is not configured.

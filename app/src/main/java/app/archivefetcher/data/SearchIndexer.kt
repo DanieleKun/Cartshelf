@@ -1,6 +1,7 @@
 package app.archivefetcher.data
 
 import app.archivefetcher.addon.CatalogConsole
+import app.archivefetcher.source.SourceRegistry
 import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
@@ -40,7 +41,7 @@ data class IndexProgress(
  * Reads every collection of the installed addons once and keeps the file names for offline search.
  * Each console is written as soon as it is read, so an interrupted run resumes where it stopped (see [build]).
  */
-class SearchIndexer(private val archive: ArchiveApi, private val store: IndexStore) {
+class SearchIndexer(private val sources: SourceRegistry, private val store: IndexStore) {
     private val _progress = MutableStateFlow(IndexProgress())
     val progress: StateFlow<IndexProgress> = _progress.asStateFlow()
     private val runLock = Mutex()
@@ -84,7 +85,7 @@ class SearchIndexer(private val archive: ArchiveApi, private val store: IndexSto
                 launch {
                     val item = gate.withPermit {
                         try {
-                            archive.fetchItem(entry, cache = false)
+                            sources.fetch(entry, cache = false)
                         } catch (e: CancellationException) {
                             throw e
                         } catch (_: Exception) {

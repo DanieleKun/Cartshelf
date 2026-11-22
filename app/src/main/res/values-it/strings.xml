@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Archive Fetcher</string>
+    <string name="app_name">Cartshelf</string>
 
     <string name="back">Indietro</string>
     <string name="retry">Riprova</string>
@@ -19,7 +19,7 @@
     <string name="addons">Addon</string>
     <string name="addons_subtitle">Da dove arriva il catalogo</string>
     <string name="empty_catalog_title">Ancora niente da sfogliare</string>
-    <string name="empty_catalog_body">I giochi arrivano dagli addon: piccoli file che dicono dove trovarli. Aggiungine uno e le sue console compaiono qui.</string>
+    <string name="empty_catalog_body">I giochi arrivano dagli addon: piccoli file che dicono dove trovarli, su Internet Archive o altrove sul web. Aggiungine uno e le sue console compaiono qui.</string>
     <string name="add_addon">Aggiungi addon</string>
     <string name="addon_url">Indirizzo dell\'addon</string>
     <string name="addon_adding">Attendi…</string>
@@ -28,7 +28,7 @@
     <string name="addon_update">Aggiorna</string>
     <string name="addons_installed">Addon installati</string>
     <string name="addon_summary">%1$s · %2$d console · %3$d raccolte</string>
-    <string name="addons_about">Un addon è un piccolo file che elenca le raccolte di Internet Archive per console. Trovi addon già pronti, e la guida per scrivere i tuoi, nel progetto degli addon di Archive Fetcher su GitHub. Sei responsabile degli addon che installi.</string>
+    <string name="addons_about">Un addon è un piccolo file che dice quali console esistono e dove sono i loro file: elementi di Internet Archive, cartelle di un sito web o elenchi di file. Non contiene codice. Sei responsabile degli addon che installi.</string>
     <string name="addon_failed">Problema con l\'addon: %1$s</string>
     <string name="err_addon_url">non è un indirizzo valido</string>
     <string name="err_addon_https">sono accettati solo indirizzi https://</string>
@@ -87,7 +87,7 @@
     <string name="keys_hint">Facoltativo: serve solo per le raccolte che richiedono un account. Accedi su archive.org, apri la pagina delle chiavi e incolla qui i due valori. Restano cifrati su questo dispositivo.</string>
     <string name="keys_link_copied">Nessun browser trovato, link copiato negli appunti</string>
     <string name="notice_title">Avviso</string>
-    <string name="notice_body">Questa app è un client generico per Internet Archive e non ospita alcun file. Sei l\'unico responsabile di ciò che scarichi: scarica solo contenuti che hai il diritto di possedere.</string>
+    <string name="notice_body">Questa app non ospita file e non ha un catalogo suo: tutto arriva dagli addon che aggiungi. La responsabilità di ciò che scarichi è solo tua: scarica solo contenuti che hai il diritto di possedere.</string>
     <string name="tap_to_edit">Tocca per modificare</string>
 
     <string name="err_network">Errore di rete (%1$s)</string>

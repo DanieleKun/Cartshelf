@@ -22,7 +22,7 @@ data class InstalledAddon(
  * Keeps one JSON file per installed manifest plus an index (address and fetch time of each), so addons work offline.
  * It does no locking of its own: the repository serializes access.
  */
-class AddonStore(private val dir: File) {
+class AddonStore(private val dir: File, private val allowLocalHttp: Boolean = false) {
     private val json = Json { ignoreUnknownKeys = true }
 
     @Serializable
@@ -37,7 +37,7 @@ class AddonStore(private val dir: File) {
     fun load(): List<InstalledAddon> =
         readIndex().addons.mapNotNull { entry ->
             runCatching {
-                val manifest = ManifestParser.parse(manifestFile(entry.id).readText())
+                val manifest = ManifestParser.parse(manifestFile(entry.id).readText(), allowLocalHttp)
                 InstalledAddon(entry.id, entry.url, entry.fetchedAt, manifest)
             }.getOrNull()
         }

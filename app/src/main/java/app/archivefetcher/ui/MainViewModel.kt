@@ -173,7 +173,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     // ---- Addons -------------------------------------------------------------------------------------------
 
-    /** Called for an archivefetcher://addon?url=… link: pre-fills the form, the user still has to confirm. */
+    /** Called for a cartshelf://addon?url=… link: pre-fills the form, the user still has to confirm. */
     fun requestAddon(url: String) {
         addonUrl = url
         addonMessage = null
@@ -293,7 +293,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     launch {
                         val outcome = gate.withPermit {
                             try {
-                                Result.success(graph.archive.fetchItem(pack.entry))
+                                Result.success(graph.sources.fetch(pack.entry))
                             } catch (e: CancellationException) {
                                 throw e
                             } catch (e: Exception) {
@@ -342,7 +342,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         launch {
                             val outcome = gate.withPermit {
                                 try {
-                                    Result.success(graph.archive.fetchItem(entry))
+                                    Result.success(graph.sources.fetch(entry))
                                 } catch (e: CancellationException) {
                                     throw e
                                 } catch (e: Exception) {
@@ -466,7 +466,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private suspend fun enqueueNow(console: ConsoleInfo, files: List<RomFile>): Boolean {
         val folder = withContext(Dispatchers.IO) { graph.folders.resolve(console.id, console.name, create = true) } ?: return false
         files.forEach { file ->
-            graph.downloads.enqueue(console.name, folder, file.displayName, graph.archive.downloadUrl(file), file.size, file.md5)
+            graph.downloads.enqueue(console.name, folder, file.displayName, graph.sources.downloadUrl(file), file.size, file.md5)
         }
         folderRevision++
         return true

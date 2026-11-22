@@ -70,9 +70,9 @@ fun AddonsScreen(vm: MainViewModel) {
                         stringResource(if (vm.addonBusy) R.string.addon_adding else R.string.add_short),
                         { vm.installAddon() },
                         Modifier.weight(1f),
+                        // Kept enabled while busy (the view model ignores repeated presses) so D-pad focus stays here.
                         highlighted = vm.addonUrl.isNotBlank(),
                         icon = AppIcons.Add,
-                        enabled = !vm.addonBusy,
                     )
                 }
                 AnimatedVisibility(vm.addonBusy, enter = fadeIn() + expandVertically(), exit = fadeOut()) { IndeterminateBar() }

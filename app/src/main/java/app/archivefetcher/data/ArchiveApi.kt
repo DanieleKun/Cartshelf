@@ -13,11 +13,16 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.OkHttpClient
+import app.archivefetcher.source.SourceProvider
 
-/** Talks to the public Internet Archive metadata API and caches item listings in memory. */
-class ArchiveApi(private val client: OkHttpClient, private val texts: Texts) {
+/** The Internet Archive source: talks to the public metadata API and caches item listings in memory. */
+class ArchiveApi(private val client: OkHttpClient, private val texts: Texts) : SourceProvider {
     private val json = Json { ignoreUnknownKeys = true }
     private val cache = ConcurrentHashMap<String, ArchiveItem>()
+
+    override val types = setOf(SourceTypes.ARCHIVE_ITEM)
+
+    override suspend fun fetch(entry: CatalogEntry, cache: Boolean): ArchiveItem = fetchItem(entry, cache)
 
     /** With [cache] off the result is not kept in memory, for bulk reads such as building the search index. */
     suspend fun fetchItem(entry: CatalogEntry, cache: Boolean = true): ArchiveItem {

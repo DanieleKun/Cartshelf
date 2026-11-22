@@ -1,9 +1,9 @@
 package app.archivefetcher.download
 
-import app.archivefetcher.data.ArchiveApi
 import app.archivefetcher.data.LaterItem
 import app.archivefetcher.data.LaterStore
 import app.archivefetcher.data.LibraryFolders
+import app.archivefetcher.source.SourceRegistry
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -16,7 +16,7 @@ import kotlinx.coroutines.withContext
 class LaterRunner(
     private val folders: LibraryFolders,
     private val downloads: DownloadManager,
-    private val archive: ArchiveApi,
+    private val sources: SourceRegistry,
     private val later: LaterStore,
     scope: CoroutineScope,
 ) {
@@ -43,7 +43,7 @@ class LaterRunner(
             } else {
                 group.forEach { item ->
                     val file = item.toRomFile()
-                    downloads.enqueue(name, folder, file.displayName, archive.downloadUrl(file), file.size, file.md5, item.key)
+                    downloads.enqueue(name, folder, file.displayName, sources.downloadUrl(file), file.size, file.md5, item.key)
                     started++
                 }
             }

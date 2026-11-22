@@ -12,5 +12,5 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
-rootProject.name = "ArchiveFetcher"
+rootProject.name = "Cartshelf"
 include(":app")

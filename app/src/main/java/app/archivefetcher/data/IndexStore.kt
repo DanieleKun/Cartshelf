@@ -18,7 +18,7 @@ data class SearchResult(val hits: List<IndexHit>, val total: Int, val approximat
  * Local copy of the file names of each console, so a search across all consoles needs no network.
  * Each console has two files with one line per file, in the same order: `<id>.names` holds only the normalized
  * names (see [SearchText]) and is what a search scans; `<id>.tsv` holds the full rows (name, item, path, size, md5,
- * locked, format, collection) and is read only for the matches. A `format` file records the layout version, so an
+ * locked, format, collection, direct url) and is read only for the matches. A `format` file records the layout version, so an
  * index written by an older version of the app is dropped instead of being misread.
  */
 class IndexStore(private val dir: File) {
@@ -39,7 +39,7 @@ class IndexStore(private val dir: File) {
                 out.write(
                     listOf(
                         file.searchName, clean(file.identifier), clean(file.path), file.size.toString(),
-                        file.md5.orEmpty(), if (file.locked) "1" else "0", clean(file.format), clean(file.packTitle),
+                        file.md5.orEmpty(), if (file.locked) "1" else "0", clean(file.format), clean(file.packTitle), clean(file.url.orEmpty()),
                     ).joinToString("\t"),
                 )
                 out.write("\n")
@@ -131,12 +131,12 @@ class IndexStore(private val dir: File) {
     }
 
     private fun parse(consoleId: String, line: String): IndexHit? {
-        val parts = line.split('\t', limit = 8)
-        if (parts.size < 8) return null
+        val parts = line.split('\t', limit = 9)
+        if (parts.size < 9) return null
         val size = parts[3].toLongOrNull() ?: return null
         val file = RomFile.create(
             identifier = parts[1], path = parts[2], size = size, format = parts[6], packTitle = parts[7],
-            locked = parts[5] == "1", md5 = parts[4].takeIf { it.isNotBlank() },
+            locked = parts[5] == "1", md5 = parts[4].takeIf { it.isNotBlank() }, url = parts[8].takeIf { it.isNotBlank() },
         )
         return IndexHit(consoleId, file)
     }
@@ -183,7 +183,7 @@ class IndexStore(private val dir: File) {
         const val NAMES = ".names"
         const val ROWS = ".tsv"
         const val VERSION_FILE = "format"
-        const val VERSION = 2
+        const val VERSION = 3
         const val CANCEL_CHECK_EVERY = 4000
     }
 }

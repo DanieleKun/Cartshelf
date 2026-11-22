@@ -7,6 +7,7 @@ import androidx.core.content.ContextCompat
 import androidx.documentfile.provider.DocumentFile
 import app.archivefetcher.R
 import app.archivefetcher.Texts
+import app.archivefetcher.data.AuthInterceptor
 import app.archivefetcher.data.CountingInputStream
 import app.archivefetcher.data.HttpStatusException
 import app.archivefetcher.data.Md5
@@ -297,7 +298,12 @@ class DownloadManager(
                         return@use
                     }
                     response.code == 401 || response.code == 403 ->
-                        throw HttpStatusException(response.code, loginRefusedMessage(response.code, response.request.url.host))
+                        throw HttpStatusException(
+                            response.code,
+                            // Accounts exist only for the Internet Archive; other hosts just refused the file.
+                            if (AuthInterceptor.isArchiveHost(response.request.url)) loginRefusedMessage(response.code, response.request.url.host)
+                            else texts.get(R.string.err_http, response.code),
+                        )
                     response.code == 416 -> {
                         // The range starts at or past the end: the partial file is most likely already complete.
                         if (task.totalBytes > 0 && offset >= task.totalBytes) {

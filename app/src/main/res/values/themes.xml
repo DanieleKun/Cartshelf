@@ -1,5 +1,5 @@
 <resources>
-    <style name="Theme.ArchiveFetcher" parent="android:Theme.Material.NoActionBar">
+    <style name="Theme.Cartshelf" parent="android:Theme.Material.NoActionBar">
         <item name="android:windowBackground">#0C0E12</item>
         <item name="android:statusBarColor">#0C0E12</item>
         <item name="android:navigationBarColor">#0C0E12</item>

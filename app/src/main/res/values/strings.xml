@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Archive Fetcher</string>
+    <string name="app_name">Cartshelf</string>
 
     <!-- Generic -->
     <string name="back">Back</string>
@@ -22,7 +22,7 @@
     <string name="addons">Addons</string>
     <string name="addons_subtitle">Where the catalog comes from</string>
     <string name="empty_catalog_title">Nothing to browse yet</string>
-    <string name="empty_catalog_body">Games come from addons: small files that say where to find them. Add one and its consoles show up here.</string>
+    <string name="empty_catalog_body">Games come from addons: small files that say where to find them, on the Internet Archive or elsewhere on the web. Add one and its consoles show up here.</string>
     <string name="add_addon">Add addon</string>
     <string name="addon_url">Addon address</string>
     <string name="addon_adding">Please wait…</string>
@@ -31,7 +31,7 @@
     <string name="addon_update">Update</string>
     <string name="addons_installed">Installed addons</string>
     <string name="addon_summary">%1$s · %2$d consoles · %3$d collections</string>
-    <string name="addons_about">An addon is a small file that lists Internet Archive collections by console. Find ready-made addons, and the guide to write your own, in the Archive Fetcher addons project on GitHub. You are responsible for the addons you install.</string>
+    <string name="addons_about">An addon is a small file that says which consoles exist and where their files are: Internet Archive items, folders on a website, or lists of files. It contains no code. You are responsible for the addons you install.</string>
     <string name="addon_failed">Addon problem: %1$s</string>
     <string name="err_addon_url">that is not a valid address</string>
     <string name="err_addon_https">only https:// addresses are accepted</string>
@@ -93,7 +93,7 @@
     <string name="keys_hint">Optional: needed only for collections that require an account. Sign in on archive.org, open the keys page and paste the two values here. They are stored encrypted on this device.</string>
     <string name="keys_link_copied">No browser found, link copied to the clipboard</string>
     <string name="notice_title">Notice</string>
-    <string name="notice_body">This app is a generic Internet Archive client and hosts no files. You are solely responsible for what you download: only download content you have the right to own.</string>
+    <string name="notice_body">This app hosts no files and has no catalog of its own: everything comes from the addons you add. You alone are responsible for what you download: download only content you have the right to own.</string>
     <string name="tap_to_edit">Tap to edit</string>
 
     <!-- Errors -->

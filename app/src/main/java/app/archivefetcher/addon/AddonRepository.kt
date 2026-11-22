@@ -43,7 +43,7 @@ class AddonRepository(
     /** Installs a manifest the user picked from a file. It has no address, so it can only be replaced, not refreshed. */
     suspend fun installFromText(text: String): InstallOutcome {
         if (text.length > AddonSpec.MAX_BYTES) throw AddonException(AddonException.Kind.TooLarge)
-        val manifest = ManifestParser.parse(text)
+        val manifest = ManifestParser.parse(text, allowLocalHttp)
         return save(InstalledAddon(manifest.id, "", clock(), manifest), text)
     }
 
@@ -89,7 +89,7 @@ class AddonRepository(
         } catch (e: IOException) {
             throw AddonException(AddonException.Kind.Network, e.message)
         }
-        return ManifestParser.parse(raw) to raw
+        return ManifestParser.parse(raw, allowLocalHttp) to raw
     }
 
     private suspend fun save(addon: InstalledAddon, raw: String): InstallOutcome =

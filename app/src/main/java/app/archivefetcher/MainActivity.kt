@@ -68,10 +68,15 @@ class MainActivity : ComponentActivity() {
         handleAddonLink(intent)
     }
 
-    /** archivefetcher://addon?url=… only pre-fills the form; installing always needs the user's confirmation. */
+    /** cartshelf://addon?url=… (or the older archivefetcher://) only pre-fills the form; installing always needs the user's confirmation. */
     private fun handleAddonLink(intent: Intent?) {
         val data = intent?.data ?: return
-        if (data.scheme != "archivefetcher" || data.host != "addon") return
+        if (data.scheme !in ADDON_SCHEMES || data.host != "addon") return
         data.getQueryParameter("url")?.takeIf { it.isNotBlank() }?.let(viewModel::requestAddon)
+    }
+
+    private companion object {
+        /** The current link scheme and the one used before the app was renamed, so old links keep working. */
+        val ADDON_SCHEMES = setOf("cartshelf", "archivefetcher")
     }
 }

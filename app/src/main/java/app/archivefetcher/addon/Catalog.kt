@@ -1,6 +1,8 @@
 package app.archivefetcher.addon
 
 import app.archivefetcher.data.CatalogEntry
+import app.archivefetcher.data.RemoteFile
+import app.archivefetcher.data.SourceTypes
 
 /** A console as shown in the app. [id] is the stable key used for preferences such as the destination folder. */
 data class ConsoleInfo(val id: String, val name: String, val categoryId: String)
@@ -34,6 +36,35 @@ object CatalogMerger {
      * them. A collection (same item and path) that several addons list is kept once. Consoles without collections
      * are left out.
      */
+    /**
+     * Turns a validated collection into a catalog entry. The identifier names the source, so the same item, page or
+     * feed listed by two addons is shown once; an inline list is identified by its addon and title.
+     */
+    private fun entryOf(addonId: String, collection: ManifestCollection): CatalogEntry? {
+        val source = collection.source
+        return when (source.type) {
+            SourceTypes.ARCHIVE_ITEM -> CatalogEntry(
+                collection.title, source.id ?: return null, source.path.orEmpty(), collection.format,
+                expandZip = source.expand == AddonSpec.EXPAND_ZIP,
+            )
+            // Addresses are stored normalized, the form every later request uses (already validated by the parser).
+            SourceTypes.HTTP_DIRECTORY, SourceTypes.FILE_LIST -> CatalogEntry(
+                collection.title, normalized(source.url) ?: return null, format = collection.format,
+                sourceType = source.type, extensions = source.extensions.orEmpty(),
+            )
+            SourceTypes.FILES -> CatalogEntry(
+                collection.title, "files:$addonId/${collection.title}", format = collection.format,
+                sourceType = source.type,
+                files = source.files.orEmpty().mapNotNull { file ->
+                    normalized(file.url)?.let { RemoteFile(file.name, it, file.size ?: 0, file.md5?.lowercase()) }
+                },
+            )
+            else -> null
+        }
+    }
+
+    private fun normalized(url: String?): String? = url?.let { SourceUrl.parse(it, allowLocalHttp = true)?.toString() }
+
     fun merge(manifests: List<AddonManifest>): Catalog {
         val categories = LinkedHashMap<String, CategoryBuilder>()
         for (manifest in manifests) {
@@ -42,13 +73,9 @@ object CatalogMerger {
                 for (console in category.consoles) {
                     val consoleBuilder = categoryBuilder.consoles.getOrPut(console.id) { ConsoleBuilder(console.id, console.name) }
                     for (collection in console.collections) {
-                        val id = collection.source.id ?: continue
-                        val path = collection.source.path.orEmpty()
-                        if (consoleBuilder.seen.add(id to path)) {
-                            consoleBuilder.entries += CatalogEntry(
-                                collection.title, id, path, collection.format,
-                                expandZip = collection.source.expand == AddonSpec.EXPAND_ZIP,
-                            )
+                        val entry = entryOf(manifest.id, collection) ?: continue
+                        if (consoleBuilder.seen.add("${entry.sourceType}|${entry.identifier}" to entry.subPath)) {
+                            consoleBuilder.entries += entry
                         }
                     }
                 }
