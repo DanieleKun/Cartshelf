@@ -290,4 +290,9 @@
     <string name="settings_downloads">Downloads</string>
     <string name="background_notifications">Progress notifications</string>
     <string name="privacy_body">No tracking or analytics. Your Internet Archive keys and session stay on this device, encrypted, and are sent only to archive.org.</string>
+    <string name="create_playlists">Create .m3u playlists for multi-disc games</string>
+    <string name="playlists_hint">When a game has several discs (Disc 1, Disc 2…), a .m3u file is written next to them. Open that file in the emulator and change disc from its menu.</string>
+    <string name="about_title">About</string>
+    <string name="about_version">Version %1$s (%2$d)</string>
+    <string name="about_source">Source code and updates on GitHub</string>
 </resources>

@@ -63,6 +63,11 @@ class Prefs(context: Context) {
         get() = sp.getBoolean(KEY_EXTRACT, true)
         set(value) = sp.edit { putBoolean(KEY_EXTRACT, value) }
 
+    /** Write a `.m3u` playlist next to the discs of multi-disc games. */
+    var createPlaylists: Boolean
+        get() = sp.getBoolean(KEY_PLAYLISTS, true)
+        set(value) = sp.edit { putBoolean(KEY_PLAYLISTS, value) }
+
     /** Remove the ZIP once it was unpacked successfully. */
     var deleteZipAfterExtract: Boolean
         get() = sp.getBoolean(KEY_DELETE_ZIP, true)
@@ -155,6 +160,7 @@ class Prefs(context: Context) {
         private const val KEY_COOKIES = "ia_cookies"
         private const val KEY_LOGIN_EMAIL = "ia_login_email"
         private const val KEY_EXTRACT = "extract_zips"
+        private const val KEY_PLAYLISTS = "create_m3u"
         private const val KEY_DELETE_ZIP = "delete_zip_after_extract"
     }
 }

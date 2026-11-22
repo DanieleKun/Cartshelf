@@ -9,6 +9,7 @@ import java.net.Socket
 import java.net.SocketAddress
 import java.net.UnknownHostException
 import javax.net.SocketFactory
+import okhttp3.Dispatcher
 import okhttp3.Dns
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -73,12 +74,16 @@ class PublicSocketFactory : SocketFactory() {
         throw UnsupportedOperationException()
 }
 
+private const val MAX_REQUESTS_PER_HOST = 12
+
 fun buildHttpClient(
     authorization: () -> String? = { null },
     cookie: () -> String? = { null },
     allowLocalTestHosts: Boolean = false,
 ): OkHttpClient =
     OkHttpClient.Builder()
+        // The default of 5 calls per host let the background index (up to 6 listings) starve the screen being browsed.
+        .dispatcher(Dispatcher().apply { maxRequestsPerHost = MAX_REQUESTS_PER_HOST })
         // A network interceptor, so the credentials are also added after archive.org redirects to a data node.
         .addNetworkInterceptor(AuthInterceptor(authorization, cookie))
         .dns(PublicDns(allowLocalTestHosts))

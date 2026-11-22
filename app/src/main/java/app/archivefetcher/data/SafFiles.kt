@@ -19,4 +19,30 @@ object SafFiles {
         val child = DocumentFile.fromTreeUri(context, DocumentsContract.buildDocumentUriUsingTree(dir.uri, childId))
         return child?.takeIf { it.exists() }
     }
+
+    /** Names of the files directly inside [dir], read with one query instead of one call per file. */
+    fun childNames(context: Context, dir: DocumentFile): List<String> {
+        val parentId = runCatching { DocumentsContract.getDocumentId(dir.uri) }.getOrNull() ?: return emptyList()
+        val children = DocumentsContract.buildChildDocumentsUriUsingTree(dir.uri, parentId)
+        val projection = arrayOf(DocumentsContract.Document.COLUMN_DISPLAY_NAME, DocumentsContract.Document.COLUMN_MIME_TYPE)
+        val names = ArrayList<String>()
+        context.contentResolver.query(children, projection, null, null, null)?.use { cursor ->
+            while (cursor.moveToNext()) {
+                val name = cursor.getString(0) ?: continue
+                if (cursor.getString(1) != DocumentsContract.Document.MIME_TYPE_DIR) names += name
+            }
+        }
+        return names
+    }
+
+    /** Creates or replaces a small text file; an unchanged file is left untouched. */
+    fun writeText(context: Context, dir: DocumentFile, name: String, text: String) {
+        val existing = findChild(context, dir, name)
+        if (existing != null) {
+            val current = runCatching { context.contentResolver.openInputStream(existing.uri)?.use { it.reader().readText() } }.getOrNull()
+            if (current == text) return
+        }
+        val file = existing ?: dir.createFile("application/octet-stream", name) ?: return
+        context.contentResolver.openOutputStream(file.uri, "wt")?.use { it.write(text.toByteArray(Charsets.UTF_8)) }
+    }
 }

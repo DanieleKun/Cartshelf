@@ -15,6 +15,7 @@ files. You are responsible for the addons you add and for what you download.
 - Language filters that understand `(Italy)`, `(It)`, `(En,Fr,It)`, `[T-Ita]`, `ITA` and GoodTools codes
 - Offline search index built in the background, with the screen off, resuming after interruptions
 - Large zips that hold a whole console are listed game by game, so you download only what you pick
+- Multi-disc games get a `.m3u` playlist next to their discs, so the emulator shows one entry and swaps discs
 - "Download later" list that can start by itself on Wi-Fi while charging, or at night
 - One library folder with a sub-folder per console, named for ES-DE / ArkOS / ROCKNIX, Batocera / Knulli, or in full
 - Files already in the folder are marked, and can be hidden

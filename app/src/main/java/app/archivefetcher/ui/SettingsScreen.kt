@@ -40,6 +40,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
+import app.archivefetcher.BuildConfig
 import app.archivefetcher.R
 import app.archivefetcher.data.LoginResult
 import app.archivefetcher.data.Prefs
@@ -57,6 +58,7 @@ fun SettingsScreen(vm: MainViewModel) {
 
     var extract by remember { mutableStateOf(prefs.extractZips) }
     var deleteZip by remember { mutableStateOf(prefs.deleteZipAfterExtract) }
+    var playlists by remember { mutableStateOf(prefs.createPlaylists) }
     var verify by remember { mutableStateOf(prefs.verifyDownloads) }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -110,6 +112,8 @@ fun SettingsScreen(vm: MainViewModel) {
                     OnOffRow(stringResource(R.string.delete_zip), deleteZip) { deleteZip = it; prefs.deleteZipAfterExtract = it }
                 }
                 Hint(stringResource(R.string.extract_hint))
+                OnOffRow(stringResource(R.string.create_playlists), playlists) { playlists = it; prefs.createPlaylists = it }
+                Hint(stringResource(R.string.playlists_hint))
                 OnOffRow(stringResource(R.string.verify_downloads), verify) { verify = it; prefs.verifyDownloads = it }
                 Hint(stringResource(R.string.verify_hint))
             }
@@ -183,6 +187,17 @@ fun SettingsScreen(vm: MainViewModel) {
                 Hint(stringResource(R.string.notice_body))
                 Hint(stringResource(R.string.privacy_body))
             }
+            Section(stringResource(R.string.about_title)) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    BrandMark(36.dp)
+                    Column(Modifier.weight(1f)) {
+                        Text(stringResource(R.string.app_name), style = AppType.Heading)
+                        Text(stringResource(R.string.about_version, BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE), style = AppType.Caption)
+                    }
+                }
+                AppButton(stringResource(R.string.about_source), { openLink(context, SOURCE_URL) }, Modifier.fillMaxWidth(), icon = AppIcons.Forward)
+                Hint(SOURCE_URL.removePrefix("https://"))
+            }
         }
     }
 }
@@ -231,16 +246,22 @@ private fun applyLanguage(context: Context, prefs: Prefs, code: String) {
     (context as? Activity)?.recreate()
 }
 
-/** Opens the page where Internet Archive shows the user's keys; falls back to copying the link when no browser exists. */
-private fun openKeysPage(context: Context) {
+/** Opens the page where Internet Archive shows the user's keys. */
+private fun openKeysPage(context: Context) = openLink(context, Prefs.KEYS_PAGE_URL)
+
+/** Opens a web page; on devices without a browser (some handhelds) the link is copied instead. */
+private fun openLink(context: Context, url: String) {
     try {
-        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(Prefs.KEYS_PAGE_URL)))
+        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
     } catch (_: ActivityNotFoundException) {
         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-        clipboard.setPrimaryClip(ClipData.newPlainText("archive.org", Prefs.KEYS_PAGE_URL))
+        clipboard.setPrimaryClip(ClipData.newPlainText(Uri.parse(url).host, url))
         Toast.makeText(context, context.getString(R.string.keys_link_copied), Toast.LENGTH_LONG).show()
     }
 }
+
+/** Where the source code and the releases live. */
+private const val SOURCE_URL = "https://github.com/DanieleKun/Rom-Downloader"
 
 @Composable
 private fun Section(title: String, content: @Composable ColumnScope.() -> Unit) {

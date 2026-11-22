@@ -11,6 +11,10 @@ import app.archivefetcher.data.AuthInterceptor
 import app.archivefetcher.data.CountingInputStream
 import app.archivefetcher.data.HttpStatusException
 import app.archivefetcher.data.Md5
+import app.archivefetcher.data.MultiDisc
+import app.archivefetcher.data.RomNaming
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import app.archivefetcher.data.SafFiles
 import app.archivefetcher.data.ZipExtractor
 import app.archivefetcher.data.Prefs
@@ -51,6 +55,9 @@ class DownloadManager(
     val tasks: StateFlow<List<DownloadTask>> = _tasks.asStateFlow()
 
     private val lock = Any()
+
+    /** Two discs of a game can finish together; one playlist write at a time keeps the file whole. */
+    private val playlistLock = Mutex()
     private val jobs = HashMap<String, Job>()
     private val calls = HashMap<String, Call>()
 
@@ -139,6 +146,7 @@ class DownloadManager(
             if (isCurrent() && shouldVerify(task)) verify(task, ::isCurrent)
             if (isCurrent() && shouldExtract(task)) extract(task, ::isCurrent)
             if (isCurrent()) {
+                writePlaylists(task)
                 patch(id) { it.copy(state = DownloadState.Done, doneBytes = it.totalBytes, bytesPerSec = 0, message = null) }
             }
         } catch (e: CancellationException) {
@@ -156,6 +164,24 @@ class DownloadManager(
                 }
             }
             pump()
+        }
+    }
+
+    /**
+     * After a disc of a multi-disc game arrives, writes `<game>.m3u` next to the discs so emulators show one entry.
+     * The folder is read again each time, so the playlist grows as the other discs arrive. A failure here never fails
+     * the download: the playlist is a convenience.
+     */
+    private suspend fun writePlaylists(task: DownloadTask) {
+        if (!prefs.createPlaylists) return
+        val game = MultiDisc.discOf(task.fileName)?.game ?: return
+        playlistLock.withLock {
+            runCatching {
+                val dir = DocumentFile.fromTreeUri(context, Uri.parse(task.folderUri)) ?: return@runCatching
+                MultiDisc.playlists(SafFiles.childNames(context, dir))
+                    .filter { RomNaming.stemOf(it.fileName) == RomNaming.safeFileName(game) }
+                    .forEach { SafFiles.writeText(context, dir, it.fileName, it.content) }
+            }
         }
     }
 
