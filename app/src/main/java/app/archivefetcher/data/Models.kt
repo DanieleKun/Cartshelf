@@ -28,6 +28,9 @@ data class RomFile(
     /** Safe to use as a local file name even though it comes from remote metadata. */
     val displayName: String = RomNaming.safeFileName(path.substringAfterLast('/'))
     val key: String = "$identifier/$path"
+
+    /** The name reduced for matching: no accents, punctuation or case (see [SearchText]). */
+    val searchName: String = SearchText.normalize(displayName)
     val regionGroups: List<String> = RomNaming.regionGroupsOf(regions)
     val languageGroups: List<String> = RomNaming.languageGroupsOf(languages)
 
@@ -37,8 +40,9 @@ data class RomFile(
             identifier: String, path: String, size: Long, format: String, packTitle: String, locked: Boolean, md5: String?,
         ): RomFile {
             val shortName = path.substringAfterLast('/')
+            val regions = RomNaming.regionsOf(shortName)
             return RomFile(
-                identifier, path, size, RomNaming.regionsOf(shortName), RomNaming.languagesOf(shortName),
+                identifier, path, size, regions, RomLanguages.of(shortName, regions),
                 format, packTitle, locked, md5,
             )
         }

@@ -1,17 +1,22 @@
 package app.archivefetcher.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -21,95 +26,136 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import app.archivefetcher.R
+import app.archivefetcher.addon.CatalogCategory
 
-/** First level: manufacturers (Nintendo, Sony, Sega…). Everything comes from the installed addons. */
+/** The app's mark: a cartridge-orange tile with the download arrow. */
+@Composable
+fun BrandMark(size: Dp = 40.dp) {
+    Box(Modifier.size(size).background(Palette.Accent, RoundedCornerShape(size * 0.28f)), contentAlignment = Alignment.Center) {
+        Icon(AppIcons.Download, contentDescription = null, tint = Palette.OnAccent, modifier = Modifier.size(size * 0.6f))
+    }
+}
+
+/** Home: search across everything, then the platforms (Nintendo, Sony, Sega…) that the installed addons provide. */
 @Composable
 fun CategoriesScreen(vm: MainViewModel) {
     val catalog by vm.catalog.collectAsState()
     val later by vm.later.collectAsState()
-    ScreenFrame(
-        title = stringResource(R.string.app_name),
-        subtitle = stringResource(R.string.choose_category),
-        actions = {
-            AppButton(
-                if (later.isEmpty()) stringResource(R.string.later_short) else stringResource(R.string.later_n, later.size),
-                { vm.open(Screen.Later) },
-            )
-            AppButton(stringResource(R.string.addons), { vm.open(Screen.Addons) }, highlighted = catalog.isEmpty)
-            AppButton(stringResource(R.string.settings_short), { vm.open(Screen.Settings) })
-        },
-    ) {
-        if (catalog.isEmpty) {
-            EmptyCatalog { vm.open(Screen.Addons) }
-        } else {
-            val first = remember { FocusRequester() }
-            LaunchedEffect(catalog) { first.requestFocusWhenReady() }
-            Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            FocusSurface({ vm.open(Screen.Search) }, Modifier.fillMaxWidth(), cornerRadius = 12) {
+    val indexed by vm.indexed.collectAsState()
+    val consoleCount = remember(catalog) { catalog.categories.sumOf { it.consoles.size } }
+    val indexedCount = remember(catalog, indexed) { catalog.categories.sumOf { c -> c.consoles.count { it.info.id in indexed } } }
+    val first = remember { FocusRequester() }
+    // At a cold start the window gets input focus a moment after the first frame; asking earlier is lost.
+    val windowFocused = LocalWindowInfo.current.isWindowFocused
+    LaunchedEffect(catalog.isEmpty, windowFocused) { if (windowFocused) first.requestFocusWhenReady() }
+
+    Column(Modifier.fillMaxSize().padding(horizontal = 14.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            BrandMark()
+            Column(Modifier.weight(1f)) {
+                Text(stringResource(R.string.app_name), style = AppType.Title, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(
-                    stringResource(R.string.search_hint_all),
-                    color = Palette.TextDim,
-                    fontSize = 14.sp,
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+                    if (catalog.isEmpty) stringResource(R.string.home_subtitle_empty)
+                    else pluralStringResource(R.plurals.consoles_count, consoleCount, consoleCount),
+                    style = AppType.Caption,
+                    maxLines = 1,
                 )
             }
-            LazyVerticalGrid(
-                columns = GridCells.Adaptive(150.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.weight(1f),
-            ) {
-                itemsIndexed(catalog.categories, key = { _, category -> category.id }) { index, category ->
-                    FocusSurface(
-                        onClick = { vm.open(Screen.Category(category.id)) },
-                        focusRequester = if (index == 0) first else null,
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Text(category.name, color = Palette.Text, fontSize = 16.sp, minLines = 1, maxLines = 2)
-                            Text(
-                                pluralStringResource(R.plurals.consoles_count, category.consoles.size, category.consoles.size),
-                                color = Palette.TextDim,
-                                fontSize = 12.sp,
-                            )
-                        }
-                    }
-                }
+            IconAction(
+                AppIcons.Clock, stringResource(R.string.later_title), { vm.open(Screen.Later) },
+                badge = later.size.takeIf { it > 0 }?.let { if (it > 99) "99+" else it.toString() },
+            )
+            IconAction(AppIcons.Puzzle, stringResource(R.string.addons), { vm.open(Screen.Addons) }, highlighted = catalog.isEmpty)
+            IconAction(AppIcons.Tune, stringResource(R.string.settings), { vm.open(Screen.Settings) })
+        }
+
+        if (catalog.isEmpty) {
+            EmptyState(
+                AppIcons.Puzzle,
+                stringResource(R.string.empty_catalog_title),
+                stringResource(R.string.empty_catalog_body),
+                action = stringResource(R.string.add_addon),
+                onAction = { vm.open(Screen.Addons) },
+                actionFocus = first,
+            )
+            return@Column
+        }
+
+        LazyVerticalGrid(
+            columns = GridCells.Adaptive(CATEGORY_CELL),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+            modifier = Modifier.weight(1f),
+        ) {
+            item(key = "search", span = { GridItemSpan(maxLineSpan) }) {
+                SearchLauncher(indexedCount, consoleCount, first) { vm.open(Screen.Search) }
             }
+            item(key = "platforms", span = { GridItemSpan(maxLineSpan) }) {
+                Overline(stringResource(R.string.home_platforms), Modifier.padding(top = 6.dp, start = 2.dp))
+            }
+            itemsIndexed(catalog.categories, key = { _, category -> category.id }) { _, category ->
+                CategoryCard(category) { vm.open(Screen.Category(category.id)) }
+            }
+        }
+    }
+}
+
+/** Looks like a search field; opens the search screen, where the real field is. */
+@Composable
+private fun SearchLauncher(indexed: Int, total: Int, focus: FocusRequester, onClick: () -> Unit) {
+    FocusSurface(onClick, Modifier.fillMaxWidth(), focusRequester = focus, cornerRadius = 16) {
+        Row(
+            Modifier.padding(horizontal = 14.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Icon(AppIcons.Search, contentDescription = null, tint = Palette.Accent, modifier = Modifier.size(22.dp))
+            Column(Modifier.weight(1f)) {
+                Text(stringResource(R.string.search_hint_all), style = AppType.Label, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(
+                    if (indexed >= total) stringResource(R.string.home_search_ready)
+                    else stringResource(R.string.home_search_partial, indexed, total),
+                    style = AppType.Caption,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
             }
         }
     }
 }
 
 @Composable
-private fun EmptyCatalog(onAddAddon: () -> Unit) {
-    val focus = remember { FocusRequester() }
-    LaunchedEffect(Unit) { focus.requestFocusWhenReady() }
-    Column(
-        Modifier.fillMaxSize().padding(horizontal = 8.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text(stringResource(R.string.empty_catalog_title), color = Palette.Text, fontSize = 18.sp)
-        Text(
-            stringResource(R.string.empty_catalog_body),
-            color = Palette.TextDim,
-            fontSize = 14.sp,
-            modifier = Modifier.padding(vertical = 12.dp),
-        )
-        AppButton(stringResource(R.string.add_addon), onAddAddon, highlighted = true, focusRequester = focus)
+private fun CategoryCard(category: CatalogCategory, onClick: () -> Unit) {
+    FocusSurface(onClick, Modifier.fillMaxWidth(), cornerRadius = 16) {
+        Row(
+            Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Monogram(category.name)
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(category.name, style = AppType.Heading, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(
+                    pluralStringResource(R.plurals.consoles_count, category.consoles.size, category.consoles.size),
+                    style = AppType.Caption,
+                )
+            }
+        }
     }
 }
 
-/** Second level: the consoles of one manufacturer, one per row. */
+/** Second level: the consoles of one maker, one per row. */
 @Composable
 fun CategoryScreen(vm: MainViewModel, screen: Screen.Category) {
     val catalog by vm.catalog.collectAsState()
+    val indexed by vm.indexed.collectAsState()
     val category = catalog.category(screen.categoryId)
     ScreenFrame(
         title = category?.name.orEmpty(),
@@ -117,27 +163,37 @@ fun CategoryScreen(vm: MainViewModel, screen: Screen.Category) {
         onBack = { vm.back() },
     ) {
         if (category == null) {
-            CenterMessage(stringResource(R.string.console_not_found))
-        } else {
-            val first = remember { FocusRequester() }
-            LaunchedEffect(category.id) { first.requestFocusWhenReady() }
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxSize()) {
-                itemsIndexed(category.consoles, key = { _, console -> console.info.id }) { index, console ->
-                    FocusSurface(
-                        onClick = { vm.open(Screen.Console(console.info.id)) },
-                        focusRequester = if (index == 0) first else null,
-                        modifier = Modifier.fillMaxWidth(),
+            EmptyState(AppIcons.Warning, stringResource(R.string.console_not_found), tint = Palette.Warning)
+            return@ScreenFrame
+        }
+        val first = remember { FocusRequester() }
+        LaunchedEffect(category.id) { first.requestFocusWhenReady() }
+        LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxSize()) {
+            itemsIndexed(category.consoles, key = { _, console -> console.info.id }) { index, console ->
+                FocusSurface(
+                    onClick = { vm.open(Screen.Console(console.info.id)) },
+                    focusRequester = if (index == 0) first else null,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Row(
+                        Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        Column(Modifier.padding(horizontal = 14.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                            Text(console.info.name, color = Palette.Text, fontSize = 15.sp)
-                            Text(
-                                pluralStringResource(
-                                    R.plurals.collections_count, console.entries.size, console.entries.size,
-                                ),
-                                color = Palette.TextDim,
-                                fontSize = 12.sp,
-                            )
+                        Monogram(console.info.name, size = 40.dp)
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                            Text(console.info.name, style = AppType.Label, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    pluralStringResource(R.plurals.collections_count, console.entries.size, console.entries.size),
+                                    style = AppType.Caption,
+                                )
+                                if (console.info.id in indexed) {
+                                    Pill(stringResource(R.string.badge_searchable), Palette.Success, Palette.Success.copy(alpha = 0.12f))
+                                }
+                            }
                         }
+                        Icon(AppIcons.ChevronRight, contentDescription = null, tint = Palette.TextFaint, modifier = Modifier.size(22.dp))
                     }
                 }
             }
@@ -145,9 +201,4 @@ fun CategoryScreen(vm: MainViewModel, screen: Screen.Category) {
     }
 }
 
-@Composable
-fun Loading() {
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        CircularProgressIndicator(color = Palette.Accent)
-    }
-}
+private val CATEGORY_CELL = 220.dp

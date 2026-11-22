@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
-    <!-- localhost, 127.0.0.1 (adb reverse) and 10.0.2.2 (the Android emulator's alias for the computer running it). -->
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+    <!-- Debug builds only: localhost, 127.0.0.1 (adb reverse) and 10.0.2.2 (the emulator's alias for the computer
+         running it) may use http, so addons can be tested before they are published. -->
     <domain-config cleartextTrafficPermitted="true">
         <domain includeSubdomains="false">localhost</domain>
         <domain includeSubdomains="false">127.0.0.1</domain>

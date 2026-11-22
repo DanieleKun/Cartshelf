@@ -1,5 +1,6 @@
 package app.archivefetcher
 
+
 import android.Manifest
 import android.content.Context
 import android.content.Intent
@@ -41,7 +42,8 @@ class MainActivity : ComponentActivity() {
             statusBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),
             navigationBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),
         )
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+        // On first run the onboarding asks for this, with an explanation; afterwards ask once at start if still missing.
+        if (viewModel.graph.prefs.onboardingDone && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
             checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
         ) {
             notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)

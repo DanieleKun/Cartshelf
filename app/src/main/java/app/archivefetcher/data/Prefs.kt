@@ -3,21 +3,55 @@ package app.archivefetcher.data
 import android.content.Context
 import androidx.core.content.edit
 
-/** Small key/value store for user settings. Internet Archive keys are stored locally only. */
+/**
+ * Small key/value store for user settings. Internet Archive keys, the session cookies and the account email are
+ * encrypted with a key kept in the Android Keystore (see [SecretCipher]); nothing leaves the device.
+ */
 class Prefs(context: Context) {
     private val sp = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
+    private val cipher = SecretCipher()
+
+    /** Decrypted secrets, so a request does not pay for a Keystore call every time. */
+    private val secretCache = HashMap<String, String>()
 
     var maxParallel: Int
         get() = sp.getInt(KEY_PARALLEL, DEFAULT_PARALLEL).coerceIn(1, MAX_PARALLEL)
         set(value) = sp.edit { putInt(KEY_PARALLEL, value.coerceIn(1, MAX_PARALLEL)) }
 
     var accessKey: String
-        get() = sp.getString(KEY_ACCESS, "") ?: ""
-        set(value) = sp.edit { putString(KEY_ACCESS, value.trim()) }
+        get() = readSecret(KEY_ACCESS)
+        set(value) = writeSecret(KEY_ACCESS, value.trim())
 
     var secretKey: String
-        get() = sp.getString(KEY_SECRET, "") ?: ""
-        set(value) = sp.edit { putString(KEY_SECRET, value.trim()) }
+        get() = readSecret(KEY_SECRET)
+        set(value) = writeSecret(KEY_SECRET, value.trim())
+
+    /** Values saved in plain text by older versions are encrypted the first time they are read. */
+    private fun readSecret(key: String): String = synchronized(secretCache) {
+        secretCache[key]?.let { return it }
+        val stored = sp.getString(key, "").orEmpty()
+        val value = when {
+            stored.isEmpty() -> ""
+            SecretCipher.isEncrypted(stored) -> cipher.decrypt(stored).orEmpty()
+            else -> stored.also { writeSecret(key, it) }
+        }
+        secretCache[key] = value
+        value
+    }
+
+    /**
+     * If the Keystore is unusable the new value is kept for this session only and never written in plain text;
+     * whatever was stored before is left alone, so a Keystore hiccup can never wipe the user's saved credentials.
+     */
+    private fun writeSecret(key: String, value: String) = synchronized(secretCache) {
+        secretCache[key] = value
+        if (value.isEmpty()) {
+            sp.edit { remove(key) }
+            return@synchronized
+        }
+        val sealed = runCatching { cipher.encrypt(value) }.getOrNull() ?: return@synchronized
+        sp.edit { putString(key, sealed) }
+    }
 
     /** "system" follows the device language; otherwise a language code such as "en" or "it". */
     var language: String
@@ -67,12 +101,12 @@ class Prefs(context: Context) {
 
     /** Session cookies from an account login; the account password itself is never stored. */
     var loginCookies: String
-        get() = sp.getString(KEY_COOKIES, "") ?: ""
-        private set(value) = sp.edit { putString(KEY_COOKIES, value) }
+        get() = readSecret(KEY_COOKIES)
+        private set(value) = writeSecret(KEY_COOKIES, value)
 
     var loginEmail: String
-        get() = sp.getString(KEY_LOGIN_EMAIL, "") ?: ""
-        private set(value) = sp.edit { putString(KEY_LOGIN_EMAIL, value) }
+        get() = readSecret(KEY_LOGIN_EMAIL)
+        private set(value) = writeSecret(KEY_LOGIN_EMAIL, value)
 
     val hasLogin: Boolean get() = loginCookies.isNotBlank()
 

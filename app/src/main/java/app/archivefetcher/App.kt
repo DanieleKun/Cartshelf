@@ -12,6 +12,7 @@ import app.archivefetcher.data.SearchIndexer
 import app.archivefetcher.data.Prefs
 import app.archivefetcher.data.buildHttpClient
 import app.archivefetcher.download.DownloadManager
+import app.archivefetcher.download.IndexScheduler
 import app.archivefetcher.download.LaterRunner
 import app.archivefetcher.download.LaterScheduler
 import java.io.File
@@ -37,6 +38,7 @@ class Graph(app: Application) {
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     val laterRunner = LaterRunner(folders, downloads, archive, later, appScope)
     val laterScheduler = LaterScheduler(app, prefs)
+    val indexScheduler = IndexScheduler(app)
 }
 
 class App : Application() {

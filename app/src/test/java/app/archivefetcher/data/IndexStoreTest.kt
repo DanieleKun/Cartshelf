@@ -24,16 +24,16 @@ class IndexStoreTest {
         store.write("nintendo-gbc", listOf(rom("Pokemon Gold (USA).zip"), rom("Pokemon Silver (USA).zip"), rom("Tetris (World).zip")))
         val order = listOf("nintendo-gbc")
 
-        assertEquals(2, store.search(listOf("pokemon"), 10, order).total)
-        assertEquals(1, store.search(listOf("pokemon", "gold"), 10, order).total)
-        assertEquals(0, store.search(listOf("zelda"), 10, order).total)
+        assertEquals(2, store.search("pokemon", 10, order).total)
+        assertEquals(1, store.search("pokemon gold", 10, order).total)
+        assertEquals(0, store.search("zelda", 10, order).total)
     }
 
     @Test
     fun `search is case insensitive and returns the stored fields`() {
         val store = store()
         store.write("sony-psp", listOf(rom("Wipeout Pure (Europe).zip", md5 = "abc123", locked = true)))
-        val hit = store.search(listOf("wipeout"), 10, listOf("sony-psp")).hits.single()
+        val hit = store.search("wipeout", 10, listOf("sony-psp")).hits.single()
 
         assertEquals("sony-psp", hit.consoleId)
         assertEquals("Wipeout Pure (Europe).zip", hit.file.displayName)
@@ -47,7 +47,7 @@ class IndexStoreTest {
     fun `the limit caps the hits but not the total`() {
         val store = store()
         store.write("x-console", (1..50).map { rom("Game $it.zip") })
-        val result = store.search(listOf("game"), 10, listOf("x-console"))
+        val result = store.search("game", 10, listOf("x-console"))
         assertEquals(10, result.hits.size)
         assertEquals(50, result.total)
     }
@@ -57,9 +57,9 @@ class IndexStoreTest {
         val store = store()
         store.write("a-console", listOf(rom("Alpha one.zip")))
         store.write("b-console", listOf(rom("Alpha two.zip")))
-        val all = store.search(listOf("alpha"), 10, listOf("b-console", "a-console"))
+        val all = store.search("alpha", 10, listOf("b-console", "a-console"))
         assertEquals(listOf("b-console", "a-console"), all.hits.map { it.consoleId })
-        val onlyA = store.search(listOf("alpha"), 10, listOf("b-console", "a-console"), only = setOf("a-console"))
+        val onlyA = store.search("alpha", 10, listOf("b-console", "a-console"), only = setOf("a-console"))
         assertEquals(listOf("a-console"), onlyA.hits.map { it.consoleId })
     }
 
@@ -70,15 +70,15 @@ class IndexStoreTest {
         assertEquals(setOf("a-console"), store().indexed.value)
         store.clear()
         assertTrue(store.indexed.value.isEmpty())
-        assertEquals(0, store.search(listOf("x"), 10, listOf("a-console")).total)
+        assertEquals(0, store.search("x", 10, listOf("a-console")).total)
     }
 
     @Test
     fun `names with tabs or line breaks cannot break the file`() {
         val store = store()
         store.write("a-console", listOf(rom("Odd\tname\nhere.zip"), rom("Normal.zip")))
-        assertEquals(2, store.search(listOf("."), 10, listOf("a-console")).total)
-        assertFalse(store.search(listOf("normal"), 10, listOf("a-console")).hits.isEmpty())
+        assertEquals(1, store.search("odd here", 10, listOf("a-console")).total)
+        assertFalse(store.search("normal", 10, listOf("a-console")).hits.isEmpty())
     }
 
     @Test
@@ -95,6 +95,6 @@ class IndexStoreTest {
     fun `an empty query matches nothing`() {
         val store = store()
         store.write("a-console", listOf(rom("x.zip")))
-        assertEquals(0, store.search(emptyList(), 10, listOf("a-console")).total)
+        assertEquals(0, store.search("", 10, listOf("a-console")).total)
     }
 }

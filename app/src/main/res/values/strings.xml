@@ -3,15 +3,11 @@
     <string name="app_name">Archive Fetcher</string>
 
     <!-- Generic -->
-    <string name="back">‹ Back</string>
+    <string name="back">Back</string>
     <string name="retry">Retry</string>
-    <string name="done">Done</string>
     <string name="settings">Options</string>
 
     <!-- Consoles -->
-    <string name="choose_category">Choose a category</string>
-    <string name="catalog_load_failed">Couldn\'t load the collections.\n%1$s</string>
-    <string name="settings_short">Options</string>
     <string name="console_not_found">This console is no longer available: its addon was removed or changed.</string>
     <plurals name="consoles_count">
         <item quantity="one">%d console</item>
@@ -24,11 +20,11 @@
 
     <!-- Addons -->
     <string name="addons">Addons</string>
-    <string name="addons_subtitle">Catalogs of Internet Archive collections</string>
-    <string name="empty_catalog_title">No addons installed</string>
-    <string name="empty_catalog_body">Archive Fetcher has no catalog of its own. Addons tell it which Internet Archive collections exist. Add one to get started.</string>
+    <string name="addons_subtitle">Where the catalog comes from</string>
+    <string name="empty_catalog_title">Nothing to browse yet</string>
+    <string name="empty_catalog_body">Games come from addons: small files that say where to find them. Add one and its consoles show up here.</string>
     <string name="add_addon">Add addon</string>
-    <string name="addon_url">Addon address (https://…)</string>
+    <string name="addon_url">Addon address</string>
     <string name="addon_adding">Please wait…</string>
     <string name="addon_added">Added “%1$s”</string>
     <string name="addon_updated">Updated “%1$s”</string>
@@ -44,33 +40,29 @@
     <string name="err_addon_invalid">the file is not a valid addon (%1$s)</string>
 
     <!-- Console view -->
-    <string name="loading_packs">Loading collections %1$d/%2$d…</string>
     <string name="packs_failed">%1$d collection(s) could not be loaded</string>
-    <string name="no_packs">No Internet Archive collections for this console.</string>
-    <string name="no_results">No files match your search and filters.</string>
-    <string name="search_hint">Search by name</string>
-    <string name="folder">Folder</string>
-    <string name="folder_not_set">No folder chosen yet</string>
+    <string name="no_packs">The addon lists no collections for this console.</string>
+    <string name="no_results">Try fewer words, or clear the filters.</string>
+    <string name="search_hint">Search this console</string>
+    <string name="folder_not_set">No folder yet: you pick one at the first download</string>
     <string name="filters">Filters</string>
-    <string name="filters_count">Filters (%1$d)</string>
     <string name="filters_clear">Clear filters</string>
     <string name="filter_region">Region</string>
     <string name="filter_language">Language</string>
     <string name="filter_format">Format</string>
     <string name="filter_pack">Collection</string>
-    <string name="filters_hint">Pick several values in a group to see files matching any of them. Different groups are combined.</string>
+    <string name="filters_hint">Pick several values in a group to see games with any of them. Different groups combine.</string>
     <string name="files_count">%1$d files</string>
     <string name="selected_summary">%1$d selected · %2$s</string>
     <string name="download_n">Download (%1$d)</string>
-    <string name="locked_title">Login required</string>
-    <string name="locked_body">Internet Archive requires an account for some of these files. Tap to add your access keys in Options.</string>
+    <string name="locked_body">Some files need an Internet Archive account to download.</string>
     <string name="tag_locked">login</string>
 
     <!-- Downloads -->
     <string name="downloads">Downloads</string>
     <string name="downloads_summary">%1$d active · %2$d total</string>
     <string name="remove">Remove</string>
-    <string name="downloads_empty">No downloads yet. Select files in a console to start.</string>
+    <string name="downloads_empty">Select games in a console and press Download.</string>
     <string name="clear_done">Clear done</string>
     <string name="pause">Pause</string>
     <string name="resume">Resume</string>
@@ -98,7 +90,7 @@
     <string name="access_key">Access key</string>
     <string name="secret_key">Secret key</string>
     <string name="get_keys">Get your keys on archive.org</string>
-    <string name="keys_hint">Log in on archive.org, open the keys page and paste the two values here. They stay on this device only.</string>
+    <string name="keys_hint">Optional: needed only for collections that require an account. Sign in on archive.org, open the keys page and paste the two values here. They are stored encrypted on this device.</string>
     <string name="keys_link_copied">No browser found, link copied to the clipboard</string>
     <string name="notice_title">Notice</string>
     <string name="notice_body">This app is a generic Internet Archive client and hosts no files. You are solely responsible for what you download: only download content you have the right to own.</string>
@@ -127,7 +119,6 @@
     <string name="row_extracting">Extracting</string>
     <string name="err_extract">Couldn\'t extract the archive: %1$s</string>
     <string name="err_extract_empty">The archive is empty</string>
-    <string name="settings_extract">ZIP archives</string>
     <string name="extract_zips">Extract after download</string>
     <string name="delete_zip">Delete the ZIP once extracted</string>
     <string name="option_on">On</string>
@@ -148,7 +139,7 @@
     <string name="login_google_hint">Signing in to archive.org with Google? Your Google password does not work here. On archive.org open the login page, choose “Forgot password?” and enter the same email to create an archive.org password, then log in here. The access keys above work without a password.</string>
     <string name="show_secret">Show</string>
     <string name="hide_secret">Hide</string>
-    <string name="login_hint">An alternative to the keys. The password is sent only to archive.org and is not saved: the app keeps just the session.</string>
+    <string name="login_hint">An alternative to the keys. The password goes only to archive.org and is never saved: the app keeps only the session, encrypted.</string>
     <string name="auth_keys">access keys</string>
     <string name="auth_account">account login</string>
     <string name="err_login_refused">Internet Archive refused the login (HTTP %1$d from %2$s, sent: %3$s). Check the keys, or log in with your account in Options.</string>
@@ -157,7 +148,7 @@
     <!-- Background -->
     <string name="settings_background">Background downloads</string>
     <string name="background_allow">Allow unrestricted background use</string>
-    <string name="background_allowed">✓ Unrestricted background use allowed</string>
+    <string name="background_allowed">No battery limits</string>
     <string name="background_hint">Downloads keep running with the screen off or the app in the background. Some devices still pause them unless battery optimization is turned off for this app.</string>
     <string name="background_unavailable">This device has no screen for battery settings</string>
 
@@ -181,58 +172,47 @@
     <string name="status_verifying">Checking integrity · %1$d%%</string>
     <string name="status_done_verified">Completed and verified · %1$s</string>
     <string name="err_checksum">The file does not match the checksum published by Internet Archive and was deleted. Download it again.</string>
-    <string name="settings_verify">Integrity check</string>
     <string name="verify_downloads">Verify downloads (MD5)</string>
     <string name="verify_hint">Compares each finished file with the checksum Internet Archive publishes. Not available for single games taken from inside a big zip. Large files take a little longer to finish.</string>
     <string name="settings_library">Library folder</string>
-    <string name="library_none">No library folder chosen yet</string>
-    <string name="library_current">Library folder: %1$s</string>
-    <string name="library_choose">Choose library folder</string>
+    <string name="library_none">No folder chosen</string>
     <string name="layout_title">Sub-folder names</string>
     <string name="layout_esde">ES-DE · ArkOS · ROCKNIX</string>
     <string name="layout_batocera">Batocera · Knulli</string>
     <string name="layout_names">Full console names</string>
     <string name="layout_example">Game Boy Color goes in: %1$s</string>
     <string name="library_hint">Each console gets its own sub-folder inside the library folder, created when needed. A folder chosen for one console in its own screen takes priority.</string>
-    <string name="welcome_title">Welcome to Archive Fetcher</string>
-    <string name="welcome_subtitle">Three quick things, all optional</string>
-    <string name="welcome_intro">Browse and download files from the Internet Archive, console by console. The app contains no catalog of its own.</string>
-    <string name="welcome_step_responsibility">1. Your responsibility</string>
-    <string name="welcome_step_folder">2. Where files go</string>
-    <string name="welcome_step_addon">3. What you can browse</string>
-    <string name="welcome_addon_body">Catalogs come from addons that you add yourself, by pasting their address or picking the downloaded file. Without one the app shows nothing.</string>
+    <string name="welcome_title">Welcome</string>
+    <string name="welcome_intro">Find games by console and download them straight into the folders your emulators use. A few quick steps to set it up; you can skip any of them.</string>
+    <string name="welcome_addon_body">Consoles and games come from addons. Paste an addon\'s address or pick its file.</string>
     <string name="welcome_addon_button">Add an addon</string>
     <plurals name="welcome_addons_installed">
         <item quantity="one">%1$d addon installed</item>
         <item quantity="other">%1$d addons installed</item>
     </plurals>
-    <string name="welcome_start">Start browsing</string>
-    <string name="welcome_later">You can change all of this later in Options.</string>
+    <string name="welcome_start">Start</string>
     <string name="search_title">Search</string>
     <string name="searching">Searching…</string>
-    <string name="search_hint_all">Search all consoles…</string>
-    <string name="search_empty_hint">Type part of a game name. Only consoles in the index are searched, so build the index first for a complete result.</string>
+    <string name="search_progress">Searching %1$d consoles…</string>
+    <string name="search_hint_all">Search a game in every console</string>
+    <string name="search_empty_hint">Words can be in any order; accents, dashes and capitals don\'t matter. Example: pokemon silver</string>
     <string name="search_results">%1$d results</string>
     <string name="search_more">Showing the first %1$d of %2$d. Type more to narrow it down.</string>
-    <string name="search_none">No game found</string>
+    <string name="search_none">No games found</string>
     <string name="search_pick_hint">Tap games to select them, then download now or save for later.</string>
-    <string name="index_status">Index covers %1$d of %2$d consoles</string>
-    <string name="index_complete">All consoles are in the search index</string>
-    <string name="index_build">Build search index</string>
-    <string name="index_update">Rebuild</string>
-    <string name="index_indexing">Indexing consoles · %1$d of %2$d</string>
-    <string name="index_cancel">Stop</string>
+    <string name="index_status">%1$d of %2$d consoles searchable</string>
+    <string name="index_complete">Every console is searchable</string>
+    <string name="index_build">Prepare search</string>
+    <string name="index_update">Refresh</string>
     <string name="index_skipped">%1$d collections could not be read and are missing from the index.</string>
-    <string name="index_hint">Reads the file list of every collection once and keeps it on this device (tens of MB, a few minutes). Use Wi-Fi. Consoles you open while browsing are added automatically.</string>
+    <string name="index_hint">The app reads the game list of each collection once and keeps it on this device (a few tens of MB). It takes a few minutes; Wi-Fi is best. Consoles you open are added on their own.</string>
     <string name="select_all_short">All (%1$d)</string>
     <string name="clear_short">Clear (%1$d)</string>
     <string name="later_short">Later</string>
-    <string name="later_n">Later (%1$d)</string>
     <string name="later_title">Download later</string>
     <string name="later_summary">%1$d files · %2$s</string>
-    <string name="later_empty">Nothing saved yet. Select games and press Later.</string>
+    <string name="later_empty">Select games and press Later to keep them here.</string>
     <string name="later_hint">Saved games wait here until you download them.</string>
-    <string name="later_remove">Remove (%1$d)</string>
     <string name="later_saved">Saved %1$d for later (%2$d were already in the list)</string>
     <string name="later_started">Started %1$d downloads</string>
     <string name="later_started_skipped">Started %1$d downloads; %2$d could not start. Check that a library folder is set in Options.</string>
@@ -246,4 +226,68 @@
     <string name="add_addon_file">Add from file</string>
     <string name="addon_from_file">Added from a file. To update it, add the new file again.</string>
     <string name="err_addon_read">The file could not be read</string>
+
+    <!-- Home, loading states, offline search, onboarding -->
+    <string name="folder_label">Saves to %1$s</string>
+    <string name="folder_choose">Choose the folder for this console</string>
+    <string name="home_subtitle_empty">Add an addon to start</string>
+    <string name="home_platforms">Platforms</string>
+    <string name="home_search_ready">Every console is searchable, even offline</string>
+    <string name="home_search_partial">%1$d of %2$d consoles searchable · open to complete</string>
+    <string name="badge_searchable">Searchable</string>
+    <string name="console_error_title">Couldn\'t load this console</string>
+    <string name="console_loading_title">Loading the game list</string>
+    <string name="console_loading_detail">%1$d of %2$d collections read</string>
+    <string name="console_loading_last">last: %1$s</string>
+    <string name="console_loading_hint">Big collections take a few seconds. Games appear as soon as the first collection is ready.</string>
+    <string name="console_empty_title">No games here</string>
+    <string name="locked_action">Sign in</string>
+    <string name="search_approximate">No exact match for “%1$s”. Showing similar names.</string>
+    <string name="no_results_title">No games match</string>
+    <string name="download_short">Download</string>
+    <string name="search_empty_title">Type part of a name</string>
+    <string name="search_none_body">Check the spelling or try a shorter name.</string>
+    <string name="search_none_partial">Some consoles are not searchable yet: complete the search above to look everywhere.</string>
+    <string name="index_running_title">Preparing offline search</string>
+    <string name="index_notif_title">Preparing offline search</string>
+    <string name="index_notif_preparing">Getting started…</string>
+    <string name="index_notif_progress">Console %1$d of %2$d · %3$s</string>
+    <string name="index_background_note">It keeps going with the screen off or the app closed. If it stops, it resumes where it was.</string>
+    <string name="index_stop">Stop</string>
+    <string name="index_waiting_title">Waiting to start</string>
+    <string name="index_waiting_body">It starts as soon as there is an internet connection.</string>
+    <string name="index_missing_title">Make every console searchable</string>
+    <string name="index_partial_title">%1$d of %2$d consoles are searchable</string>
+    <string name="index_continue">Complete search</string>
+    <string name="channel_index">Offline search</string>
+    <string name="welcome_skip">Skip</string>
+    <string name="welcome_back">Back</string>
+    <string name="welcome_next">Next</string>
+    <string name="welcome_understood">Got it</string>
+    <string name="welcome_resp_title">You choose what to download</string>
+    <string name="welcome_resp_body">The app has no games of its own and hosts no files. Download only what you have the right to own.</string>
+    <string name="welcome_folder_title">Where should games go?</string>
+    <string name="welcome_folder_body">Pick one main folder, for example the ROMs folder of your device. Each console gets its own sub-folder inside it.</string>
+    <string name="welcome_layout_title">How are console folders named?</string>
+    <string name="welcome_layout_body">Pick the system you use, so games land where it looks for them. Not sure? Keep full names.</string>
+    <string name="welcome_addon_title">Add something to browse</string>
+    <string name="welcome_bg_title">Downloads with the screen off</string>
+    <string name="welcome_bg_body">Allow notifications to follow progress, and remove battery limits so long downloads don\'t stop.</string>
+    <string name="welcome_bg_notifications">Show download progress</string>
+    <string name="welcome_bg_battery">Keep going with the screen off</string>
+    <string name="welcome_allow">Allow</string>
+    <string name="welcome_ready_title">All set</string>
+    <string name="welcome_ready_body">Everything you chose can be changed later in Options.</string>
+    <string name="library_choose_hint">Tap to choose</string>
+    <string name="library_change_hint">Main folder · tap to change</string>
+    <string name="filters_clear_short">Clear</string>
+    <string name="filters_show">Show %1$d games</string>
+    <string name="downloads_empty_title">No downloads yet</string>
+    <string name="later_empty_title">Nothing saved</string>
+    <string name="addon_url_hint">https://…</string>
+    <string name="add_short">Add</string>
+    <string name="addons_none">No addons installed yet.</string>
+    <string name="settings_downloads">Downloads</string>
+    <string name="background_notifications">Progress notifications</string>
+    <string name="privacy_body">No tracking or analytics. Your Internet Archive keys and session stay on this device, encrypted, and are sent only to archive.org.</string>
 </resources>

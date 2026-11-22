@@ -1,17 +1,12 @@
 package app.archivefetcher.ui
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -22,8 +17,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import app.archivefetcher.R
 import app.archivefetcher.download.DownloadState
 import app.archivefetcher.download.DownloadTask
@@ -32,27 +27,28 @@ import app.archivefetcher.download.DownloadTask
 fun DownloadsScreen(vm: MainViewModel) {
     val tasks by vm.graph.downloads.tasks.collectAsState()
     val manager = vm.graph.downloads
+    val finished = tasks.count { it.state == DownloadState.Done || it.state == DownloadState.Failed }
     ScreenFrame(
         title = stringResource(R.string.downloads),
         subtitle = stringResource(R.string.downloads_summary, tasks.count { it.isActive }, tasks.size),
         onBack = { vm.back() },
-        actions = { AppButton(stringResource(R.string.clear_done), { manager.clearFinished() }) },
+        actions = { if (finished > 0) AppButton(stringResource(R.string.clear_done), { manager.clearFinished() }) },
     ) {
         if (tasks.isEmpty()) {
-            CenterMessage(stringResource(R.string.downloads_empty))
-        } else {
-            val firstAction = remember { FocusRequester() }
-            LaunchedEffect(tasks.firstOrNull()?.id) { firstAction.requestFocusWhenReady() }
-            LazyColumn(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(tasks, key = { it.id }) { task ->
-                    TaskCard(
-                        task,
-                        firstFocus = firstAction.takeIf { task.id == tasks.first().id },
-                        onPause = { manager.pause(task.id) },
-                        onResume = { manager.resume(task.id) },
-                        onCancel = { manager.cancel(task.id) },
-                    )
-                }
+            EmptyState(AppIcons.Download, stringResource(R.string.downloads_empty_title), stringResource(R.string.downloads_empty), tint = Palette.TextDim)
+            return@ScreenFrame
+        }
+        val firstAction = remember { FocusRequester() }
+        LaunchedEffect(tasks.firstOrNull()?.id) { firstAction.requestFocusWhenReady() }
+        LazyColumn(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            items(tasks, key = { it.id }) { task ->
+                TaskCard(
+                    task,
+                    firstFocus = firstAction.takeIf { task.id == tasks.first().id },
+                    onPause = { manager.pause(task.id) },
+                    onResume = { manager.resume(task.id) },
+                    onCancel = { manager.cancel(task.id) },
+                )
             }
         }
     }
@@ -66,33 +62,28 @@ private fun TaskCard(
     onResume: () -> Unit,
     onCancel: () -> Unit,
 ) {
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .background(Palette.Surface, RoundedCornerShape(12.dp))
-            .padding(10.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        Text(task.consoleName, color = Palette.Accent, fontSize = 11.sp, maxLines = 1)
-        Text(task.fileName, color = Palette.Text, fontSize = 14.sp, maxLines = 2)
-        LinearProgressIndicator(
-            progress = { task.progress },
-            modifier = Modifier.fillMaxWidth().height(4.dp),
-            color = if (task.state == DownloadState.Failed) Palette.Danger else Palette.Accent,
-            trackColor = Palette.SurfaceHigh,
-        )
-        Text(statusLine(task), color = statusColor(task), fontSize = 12.sp)
+    val color = statusColor(task)
+    Panel(border = if (task.state == DownloadState.Failed) Palette.Danger.copy(alpha = 0.4f) else Palette.Outline) {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Pill(task.consoleName, Palette.Accent, Palette.AccentSoft)
+            if (task.state == DownloadState.Done) Icon(AppIcons.Check, contentDescription = null, tint = Palette.Success, modifier = Modifier.size(16.dp))
+            if (task.state == DownloadState.Failed) Icon(AppIcons.Warning, contentDescription = null, tint = Palette.Danger, modifier = Modifier.size(16.dp))
+        }
+        Text(task.fileName, style = AppType.Body, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        ProgressBar(task.progress, color = if (task.state == DownloadState.Failed) Palette.Danger else if (task.state == DownloadState.Done) Palette.Success else Palette.Accent)
+        Text(statusLine(task), style = AppType.Caption.copy(color = color))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
             val running = task.isActive
             val finished = task.state == DownloadState.Done
             // One button whose label flips keeps D-pad focus on it when a download is paused or resumed.
             if (!finished) {
                 AppButton(
-                    stringResource(if (running) R.string.pause else R.string.resume),
+                    stringResource(if (running) R.string.pause else if (task.state == DownloadState.Failed) R.string.retry else R.string.resume),
                     if (running) onPause else onResume,
                     Modifier.weight(1f),
                     highlighted = !running,
                     focusRequester = firstFocus,
+                    icon = if (running) AppIcons.Pause else if (task.state == DownloadState.Failed) AppIcons.Refresh else AppIcons.Play,
                 )
             }
             AppButton(
@@ -100,6 +91,7 @@ private fun TaskCard(
                 onCancel,
                 Modifier.weight(1f),
                 focusRequester = if (finished) firstFocus else null,
+                icon = AppIcons.Close,
             )
         }
     }
@@ -120,6 +112,6 @@ private fun statusLine(task: DownloadTask): String = when (task.state) {
 
 private fun statusColor(task: DownloadTask) = when (task.state) {
     DownloadState.Failed -> Palette.Danger
-    DownloadState.Done -> Palette.Accent
+    DownloadState.Done -> Palette.Success
     else -> Palette.TextDim
 }

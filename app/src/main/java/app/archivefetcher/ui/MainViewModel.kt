@@ -27,6 +27,11 @@ import app.archivefetcher.data.SearchResult
 import app.archivefetcher.download.LaterMode
 import app.archivefetcher.data.RomFile
 import app.archivefetcher.data.RomNaming
+import app.archivefetcher.data.SearchQuery
+import app.archivefetcher.download.IndexJobState
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.stateIn
 import java.io.IOException
 import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -65,7 +70,11 @@ data class Library(
     val loading: Boolean = false,
     val hasLocked: Boolean = false,
     val error: String? = null,
+    /** Title of the collection that finished loading last, shown while the rest is on its way. */
+    val lastPack: String? = null,
 )
+
+data class VisibleFiles(val files: List<RomFile>, val approximate: Boolean)
 
 /** Result of the last add/update/remove on the Addons screen. */
 data class AddonMessage(val text: String, val isError: Boolean)
@@ -112,8 +121,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val indexProgress: StateFlow<IndexProgress> get() = graph.indexer.progress
     val later: StateFlow<List<LaterItem>> get() = graph.later.items
 
+    /** Whether the background index job is waiting (for example for a network) or running. */
+    val indexJob: StateFlow<IndexJobState> =
+        graph.indexScheduler.state.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), IndexJobState.Idle)
+
     private var searchJob: Job? = null
-    private var indexJob: Job? = null
 
     var addonUrl by mutableStateOf("")
     var addonBusy by mutableStateOf(false)
@@ -135,6 +147,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             graph.addons.load()
             graph.addons.refreshStale(REFRESH_AFTER_MS)
+        }
+        viewModelScope.launch {
+            // Consoles added to the index by the background job become searchable without retyping.
+            graph.index.indexed.drop(1).collect { if (searchQuery.isNotBlank()) onSearchQuery(searchQuery) }
         }
     }
 
@@ -348,6 +364,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                                 library = Library(
                                     files = merged.toList(), loaded = loaded, total = entries.size,
                                     failedPacks = failedPacks.toList(), loading = loaded < entries.size, hasLocked = hasLocked,
+                                    lastPack = entry.title,
                                 )
                             }
                         }
@@ -408,10 +425,26 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun isPresent(file: RomFile): Boolean = RomNaming.stemOf(file.displayName).lowercase() in present
 
-    fun isVisible(file: RomFile): Boolean =
+    private val nameQuery: SearchQuery get() = SearchQuery.parse(query)
+
+    fun isVisible(file: RomFile): Boolean = isVisible(file, nameQuery, fuzzy = false)
+
+    private fun isVisible(file: RomFile, parsed: SearchQuery, fuzzy: Boolean): Boolean =
         filters.matches(file) &&
-            (query.isBlank() || file.displayName.contains(query, ignoreCase = true)) &&
+            (parsed.isEmpty || (if (fuzzy) parsed.matchesFuzzy(file.searchName) else parsed.matches(file.searchName))) &&
             !(filters.hidePresent && isPresent(file))
+
+    /**
+     * Files that pass the filters and the name search. When the name matches nothing exactly, names within a typo or
+     * two are shown instead and [VisibleFiles.approximate] says so.
+     */
+    fun visibleFiles(files: List<RomFile>): VisibleFiles {
+        val parsed = nameQuery
+        val exact = files.filter { isVisible(it, parsed, fuzzy = false) }
+        if (exact.isNotEmpty() || parsed.isEmpty || !parsed.canBeFuzzy) return VisibleFiles(exact, approximate = false)
+        val close = files.filter { isVisible(it, parsed, fuzzy = true) }
+        return VisibleFiles(close, approximate = close.isNotEmpty())
+    }
 
     /** Reads the destination folder of the console again; a folder that does not exist yet simply has nothing in it. */
     fun refreshPresent(console: ConsoleInfo) {
@@ -498,8 +531,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun onSearchQuery(text: String) {
         searchQuery = text
         searchJob?.cancel()
-        val tokens = text.lowercase().split(Regex("\\s+")).filter { it.isNotBlank() }
-        if (tokens.isEmpty()) {
+        if (SearchQuery.parse(text).isEmpty) {
             searchResult = SearchResult(emptyList(), 0)
             searching = false
             return
@@ -510,7 +542,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             searching = true
             try {
                 searchResult = withContext(Dispatchers.IO) {
-                    graph.index.search(tokens, SEARCH_LIMIT, order) { ensureActive() }
+                    graph.index.search(text, SEARCH_LIMIT, order) { ensureActive() }
                 }
             } finally {
                 searching = false
@@ -552,29 +584,24 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     // ---- Search index --------------------------------------------------------------------------------------
 
-    fun buildIndex(onlyMissing: Boolean = true) {
-        if (indexJob?.isActive == true) return
-        val consoles = catalog.value.categories.flatMap { it.consoles }
-        indexJob = viewModelScope.launch {
-            try {
-                graph.indexer.build(consoles, onlyMissing)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (_: Exception) {
-                // Individual collections already tolerate failures; anything else leaves the partial index in place.
-            }
-            onSearchQuery(searchQuery)
-        }
+    /**
+     * Starts the background job that reads the consoles still missing from the index. It runs as a foreground job,
+     * survives the screen turning off and the app closing, and picks up where it stopped if Android interrupts it.
+     */
+    fun buildIndex() {
+        graph.indexScheduler.start()
     }
 
     fun cancelIndex() {
-        indexJob?.cancel()
+        graph.indexScheduler.stop()
     }
 
-    fun clearIndex() {
-        indexJob?.cancel()
-        graph.index.clear()
-        onSearchQuery(searchQuery)
+    /**
+     * Reads every console again, for when the addons' collections changed. Consoles are replaced one at a time and
+     * nothing is deleted first, so searching keeps working during the refresh and an accidental press loses nothing.
+     */
+    fun rebuildIndex() {
+        graph.indexScheduler.start(full = true)
     }
 
     private fun errorText(e: Throwable): String =
@@ -586,6 +613,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         const val PUBLISH_INTERVAL_NS = 300_000_000L
         const val SEARCH_DEBOUNCE_MS = 250L
         const val SEARCH_LIMIT = 300
+        const val STOP_TIMEOUT_MS = 5_000L
 
         /** Addons are checked again at startup when their stored copy is older than this. */
         const val REFRESH_AFTER_MS = 12L * 60 * 60 * 1000

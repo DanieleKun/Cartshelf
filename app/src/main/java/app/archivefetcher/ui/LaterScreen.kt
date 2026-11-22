@@ -23,11 +23,11 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import app.archivefetcher.R
 import app.archivefetcher.download.LaterMode
 
 /** Files saved for later, from every console, with the schedule that decides when they are downloaded. */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun LaterScreen(vm: MainViewModel) {
     val items by vm.later.collectAsState()
@@ -43,37 +43,30 @@ fun LaterScreen(vm: MainViewModel) {
         subtitle = stringResource(R.string.later_summary, items.size, formatBytes(totalBytes)),
         onBack = { vm.back() },
     ) {
-        Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             LaterSchedule(vm, first)
             Box(Modifier.weight(1f)) {
                 if (items.isEmpty()) {
-                    CenterMessage(stringResource(R.string.later_empty))
+                    EmptyState(AppIcons.Clock, stringResource(R.string.later_empty_title), stringResource(R.string.later_empty), tint = Palette.TextDim)
                 } else {
-                    LazyColumn(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    LazyColumn(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         items(items, key = { it.consoleId + "|" + it.key }) { item ->
                             val selected = item.key in picked
-                            FocusSurface({ vm.toggleLaterPick(item.key) }, highlighted = selected, modifier = Modifier.fillMaxWidth(), cornerRadius = 10) {
-                                Column(Modifier.padding(horizontal = 10.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                                    Row {
-                                        Text(
-                                            if (selected) "✓" else "○",
-                                            color = if (selected) Palette.Accent else Palette.TextDim,
-                                            fontSize = 15.sp,
-                                            modifier = Modifier.padding(end = 8.dp),
-                                        )
-                                        Text(
-                                            item.toRomFile().displayName, color = Palette.Text, fontSize = 14.sp,
-                                            maxLines = 2, overflow = TextOverflow.Ellipsis,
-                                        )
-                                    }
-                                    Row {
-                                        Text(
-                                            item.consoleName + " · " + formatBytes(item.size),
-                                            color = Palette.TextDim, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,
-                                            modifier = Modifier.weight(1f),
-                                        )
-                                        taskByKey[item.key]?.let { task ->
-                                            Text(rowStatus(task), color = rowStatusColor(task), fontSize = 12.sp, modifier = Modifier.padding(start = 8.dp))
+                            FocusSurface({ vm.toggleLaterPick(item.key) }, highlighted = selected, modifier = Modifier.fillMaxWidth()) {
+                                Row(
+                                    Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    SelectMark(selected)
+                                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                                        Text(item.toRomFile().displayName, style = AppType.Body, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                            Pill(item.consoleName, Palette.Accent, Palette.AccentSoft)
+                                            Pill(formatBytes(item.size))
+                                            taskByKey[item.key]?.let { task ->
+                                                Pill(rowStatus(task), rowStatusColor(task), rowStatusColor(task).copy(alpha = 0.12f))
+                                            }
                                         }
                                     }
                                 }
@@ -82,19 +75,22 @@ fun LaterScreen(vm: MainViewModel) {
                     }
                 }
             }
-            SelectionBar(vm.notice ?: stringResource(R.string.later_summary, items.size, formatBytes(totalBytes))) {
+            if (items.isNotEmpty()) SelectionBar(vm.notice ?: stringResource(R.string.later_summary, items.size, formatBytes(totalBytes))) {
                 AppButton(
                     if (picked.isEmpty()) stringResource(R.string.select_all_short, items.size)
                     else stringResource(R.string.clear_short, picked.size),
                     { if (picked.isEmpty()) vm.selectAllLater() else vm.clearLaterPicks() },
                     Modifier.weight(1f),
+                    enabled = items.isNotEmpty(),
                 )
-                AppButton(stringResource(R.string.later_remove, picked.size), { vm.removeLater() }, Modifier.weight(1f))
+                AppButton(stringResource(R.string.remove), { vm.removeLater() }, Modifier.weight(1f), icon = AppIcons.Delete, enabled = picked.isNotEmpty())
                 AppButton(
-                    stringResource(R.string.download_n, if (picked.isEmpty()) items.size else picked.size),
+                    stringResource(R.string.download_short),
                     { vm.downloadLater() },
                     Modifier.weight(1f),
                     highlighted = items.isNotEmpty(),
+                    icon = AppIcons.Download,
+                    enabled = items.isNotEmpty(),
                 )
             }
         }
@@ -105,9 +101,9 @@ fun LaterScreen(vm: MainViewModel) {
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun LaterSchedule(vm: MainViewModel, first: FocusRequester) {
-    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text(stringResource(R.string.later_when), color = Palette.Accent, fontSize = 13.sp)
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    Panel {
+        Overline(stringResource(R.string.later_when))
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             listOf(
                 LaterMode.Manual to R.string.later_mode_manual,
                 LaterMode.Charging to R.string.later_mode_charging,
@@ -117,9 +113,9 @@ private fun LaterSchedule(vm: MainViewModel, first: FocusRequester) {
             }
         }
         if (vm.laterMode == LaterMode.Night) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 AppButton("−", { vm.changeLaterHour(-1) })
-                Text("%02d:00".format(vm.laterHour), color = Palette.Text, fontSize = 18.sp)
+                Text("%02d:00".format(vm.laterHour), style = AppType.Title)
                 AppButton("+", { vm.changeLaterHour(1) })
             }
         }
@@ -131,8 +127,7 @@ private fun LaterSchedule(vm: MainViewModel, first: FocusRequester) {
                     LaterMode.Night -> R.string.later_hint_night
                 },
             ),
-            color = Palette.TextDim,
-            fontSize = 12.sp,
+            style = AppType.Caption,
         )
     }
 }

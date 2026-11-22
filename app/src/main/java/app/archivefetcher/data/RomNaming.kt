@@ -53,8 +53,21 @@ object RomNaming {
             .filter { it.isNotEmpty() }
             .toList()
 
+    /** Short region codes of GoodTools-style names, such as `(U)`, `(E)`, `(JUE)` or `(I)`. */
+    private val goodToolsRegions = mapOf(
+        'U' to "USA", 'E' to "Europe", 'J' to "Japan", 'W' to "World", 'I' to "Italy", 'F' to "France",
+        'G' to "Germany", 'S' to "Spain", 'B' to "Brazil", 'K' to "Korea", 'C' to "China", 'A' to "Australia",
+    )
+    private val goodToolsCode = Regex("^[UEJ]{2,3}$|^[UEJWIFGSBKCA]$")
+
     fun regionsOf(fileName: String): List<String> =
-        groups(fileName).filter { g -> g.all { it in knownRegions } }.flatten().distinct()
+        groups(fileName).mapNotNull { g ->
+            when {
+                g.all { it in knownRegions } -> g
+                g.size == 1 && goodToolsCode.matches(g[0]) -> g[0].map { goodToolsRegions.getValue(it) }
+                else -> null
+            }
+        }.flatten().distinct()
 
     /** Language codes such as "En" or "It", taken from groups like "(En,Fr,De)"; unknown codes are ignored. */
     fun languagesOf(fileName: String): List<String> =
