@@ -261,7 +261,7 @@ private fun openLink(context: Context, url: String) {
 }
 
 /** Where the source code and the releases live. */
-private const val SOURCE_URL = "https://github.com/DanieleKun/Rom-Downloader"
+private const val SOURCE_URL = "https://github.com/DanieleKun/Cartshelf"
 
 @Composable
 private fun Section(title: String, content: @Composable ColumnScope.() -> Unit) {

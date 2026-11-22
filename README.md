@@ -25,7 +25,7 @@ files. You are responsible for the addons you add and for what you download.
 
 ## Getting started
 
-1. Download `cartshelf-<version>.apk` from the [Releases](https://github.com/DanieleKun/Rom-Downloader/releases) page
+1. Download `cartshelf-<version>.apk` from the [Releases](https://github.com/DanieleKun/Cartshelf/releases) page
    and install it (Android asks to allow installs from your browser or file manager the first time).
 2. The first start walks you through the library folder, the folder layout of your frontend and the first addon.
 3. Add an addon under **Addons**: paste its address, or pick a downloaded `.addon.json` with **Add from file**.
