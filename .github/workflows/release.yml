@@ -1,0 +1,45 @@
+name: release
+on:
+  push:
+    tags: ['v*']
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+    steps:
+      - name: Check signing secrets
+        id: signing
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "::notice::Signing secrets are not set; see docs/RELEASING.md to build the release locally."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v4
+        if: steps.signing.outputs.enabled == 'true'
+      - uses: actions/setup-java@v4
+        if: steps.signing.outputs.enabled == 'true'
+        with: { distribution: temurin, java-version: 17 }
+      - uses: gradle/actions/setup-gradle@v4
+        if: steps.signing.outputs.enabled == 'true'
+      - name: Test and build
+        if: steps.signing.outputs.enabled == 'true'
+        env:
+          RELEASE_KEYSTORE_PATH: ${{ runner.temp }}/release.jks
+          RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
+          VERSION="${GITHUB_REF_NAME#v}"
+          ./gradlew testDebugUnitTest assembleRelease -PversionName="$VERSION" -PversionCode="${{ github.run_number }}"
+          cp app/build/outputs/apk/release/*.apk "archive-fetcher-$VERSION.apk"
+      - uses: softprops/action-gh-release@v2
+        if: steps.signing.outputs.enabled == 'true'
+        with:
+          files: archive-fetcher-*.apk
+          generate_release_notes: true
