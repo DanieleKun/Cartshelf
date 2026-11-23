@@ -126,11 +126,12 @@ private fun readablePath(tree: Uri, internal: String, card: String): String? {
 
 /**
  * Opens the system folder picker. False when the device has none: some TV and handheld systems ship only an empty
- * placeholder that closes at once, which would otherwise look like nothing happened.
+ * placeholder that closes at once, which would otherwise look like nothing happened. Finding no handler is not
+ * proof that there is none (package visibility can hide it), so only a known placeholder stops the launch.
  */
 internal fun launchFolderPicker(context: Context, picker: ActivityResultLauncher<Uri?>): Boolean {
     val handler = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).resolveActivity(context.packageManager)
-    if (handler == null || handler.packageName in PLACEHOLDER_PICKERS) return false
+    if (handler?.packageName in PLACEHOLDER_PICKERS) return false
     return try {
         picker.launch(null)
         true

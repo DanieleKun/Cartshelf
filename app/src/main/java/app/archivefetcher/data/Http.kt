@@ -122,17 +122,22 @@ class ResponseTooLargeException(val limit: Long) : IOException("response larger 
 suspend fun OkHttpClient.getStringLimited(url: String, maxBytes: Long): String {
     newCall(Request.Builder().url(url).build()).awaitResponse().use { response ->
         if (!response.isSuccessful) throw HttpStatusException(response.code, "HTTP ${response.code}")
-        val body = response.body ?: return ""
-        if (body.contentLength() > maxBytes) throw ResponseTooLargeException(maxBytes)
-        return withContext(Dispatchers.IO) {
-            val buffer = Buffer()
-            val source = body.source()
-            while (buffer.size <= maxBytes) {
-                if (source.read(buffer, READ_CHUNK) == -1L) break
-            }
-            if (buffer.size > maxBytes) throw ResponseTooLargeException(maxBytes)
-            buffer.readUtf8()
+        return response.readStringLimited(maxBytes)
+    }
+}
+
+/** The body as text, giving up as soon as it exceeds [maxBytes]. Does not close the response. */
+suspend fun Response.readStringLimited(maxBytes: Long): String {
+    val body = body ?: return ""
+    if (body.contentLength() > maxBytes) throw ResponseTooLargeException(maxBytes)
+    return withContext(Dispatchers.IO) {
+        val buffer = Buffer()
+        val source = body.source()
+        while (buffer.size <= maxBytes) {
+            if (source.read(buffer, READ_CHUNK) == -1L) break
         }
+        if (buffer.size > maxBytes) throw ResponseTooLargeException(maxBytes)
+        buffer.readUtf8()
     }
 }
 

@@ -11,6 +11,13 @@
 
     <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
 
+    <!-- Lets the app see which app handles the system folder picker (hidden from apps since Android 11). -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.OPEN_DOCUMENT_TREE" />
+        </intent>
+    </queries>
+
     <application
         android:name=".App"
         android:allowBackup="false"

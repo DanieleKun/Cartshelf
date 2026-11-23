@@ -32,6 +32,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import app.archivefetcher.R
 import app.archivefetcher.addon.CatalogCategory
 import app.archivefetcher.data.UpdateInfo
@@ -58,6 +59,11 @@ fun CategoriesScreen(vm: MainViewModel) {
     // At a cold start the window gets input focus a moment after the first frame; asking earlier is lost.
     val windowFocused = LocalWindowInfo.current.isWindowFocused
     LaunchedEffect(catalog.isEmpty, windowFocused) { if (windowFocused) first.requestFocusWhenReady() }
+    // Every return to the home screen may look for a new version; the checker keeps the requests rare.
+    LifecycleResumeEffect(Unit) {
+        vm.checkForUpdate()
+        onPauseOrDispose { }
+    }
 
     Column(Modifier.fillMaxSize().padding(horizontal = 14.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -112,7 +118,9 @@ fun CategoriesScreen(vm: MainViewModel) {
     }
 }
 
-/** A newer version is on GitHub: open its page to download it, or hide the notice for that version. */
+private const val MAX_NOTES_LINES = 6
+
+/** A newer version is on GitHub, with what is new in it: open its page to download it, or hide the notice for that version. */
 @Composable
 private fun UpdateBanner(info: UpdateInfo, onOpen: () -> Unit, onDismiss: () -> Unit) {
     Panel(border = Palette.Accent.copy(alpha = 0.45f), spacing = 10.dp) {
@@ -122,6 +130,9 @@ private fun UpdateBanner(info: UpdateInfo, onOpen: () -> Unit, onDismiss: () -> 
                 Text(stringResource(R.string.update_title, info.version), style = AppType.Label)
                 Text(stringResource(R.string.update_body), style = AppType.Caption)
             }
+        }
+        if (info.notes.isNotBlank()) {
+            Text(info.notes, style = AppType.Caption, maxLines = MAX_NOTES_LINES, overflow = TextOverflow.Ellipsis)
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             AppButton(stringResource(R.string.update_later), onDismiss, Modifier.weight(1f))

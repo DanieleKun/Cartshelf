@@ -38,8 +38,15 @@ jobs:
           VERSION="${GITHUB_REF_NAME#v}"
           ./gradlew testDebugUnitTest assembleRelease -PversionName="$VERSION" -PversionCode="$((${{ github.run_number }} + 100))"
           cp app/build/outputs/apk/release/*.apk "cartshelf-$VERSION.apk"
+      - name: Release notes
+        id: notes
+        if: steps.signing.outputs.enabled == 'true'
+        run: |
+          NOTES="docs/releases/${GITHUB_REF_NAME}.md"
+          if [ -f "$NOTES" ]; then echo "path=$NOTES" >> "$GITHUB_OUTPUT"; fi
       - uses: softprops/action-gh-release@v2
         if: steps.signing.outputs.enabled == 'true'
         with:
           files: cartshelf-*.apk
+          body_path: ${{ steps.notes.outputs.path }}
           generate_release_notes: true

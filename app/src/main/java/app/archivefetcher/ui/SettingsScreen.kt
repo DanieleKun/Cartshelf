@@ -54,7 +54,6 @@ fun SettingsScreen(vm: MainViewModel) {
     var deleteZip by remember { mutableStateOf(prefs.deleteZipAfterExtract) }
     var playlists by remember { mutableStateOf(prefs.createPlaylists) }
     var covers by remember { mutableStateOf(prefs.showCovers) }
-    var updates by remember { mutableStateOf(prefs.checkUpdates) }
     var verify by remember { mutableStateOf(prefs.verifyDownloads) }
     val power = remember { context.getSystemService(Context.POWER_SERVICE) as PowerManager }
     var unrestricted by remember { mutableStateOf(power.isIgnoringBatteryOptimizations(context.packageName)) }
@@ -136,8 +135,7 @@ fun SettingsScreen(vm: MainViewModel) {
                     }
                 }
                 AppButton(stringResource(R.string.about_source), { openLink(context, SOURCE_URL) }, Modifier.fillMaxWidth(), icon = AppIcons.Forward)
-                OnOffRow(stringResource(R.string.check_updates), updates) { updates = it; prefs.checkUpdates = it }
-                Hint(stringResource(R.string.check_updates_hint))
+                AppUpdatesSection(vm)
                 Hint(SOURCE_URL.removePrefix("https://"))
             }
         }
@@ -158,7 +156,7 @@ internal fun StatusRow(label: String, ok: Boolean) {
 }
 
 @Composable
-private fun OnOffRow(label: String, value: Boolean, onChange: (Boolean) -> Unit) {
+internal fun OnOffRow(label: String, value: Boolean, onChange: (Boolean) -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(label, style = AppType.Body, modifier = Modifier.weight(1f))
         Chip(stringResource(R.string.option_on), value) { onChange(true) }

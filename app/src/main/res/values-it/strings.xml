@@ -294,7 +294,7 @@
     <string name="show_covers">Mostra le copertine</string>
     <string name="covers_hint">Le immagini arrivano dall\'archivio libretro-thumbnails (lo stesso di RetroArch) e restano salvate sul dispositivo. Se le disattivi, l\'app non contatta quel sito.</string>
     <string name="check_updates">Avvisami delle nuove versioni</string>
-    <string name="check_updates_hint">Una volta al giorno l\'app legge la pagina pubblica dell\'ultima versione su GitHub. Non viene inviato nulla su di te.</string>
+    <string name="check_updates_hint">Quando apri l\'app, al massimo ogni 10 minuti, l\'app chiede a GitHub se c\'è una versione nuova. Non viene inviato nulla su di te.</string>
     <string name="update_title">È disponibile Cartshelf %1$s</string>
     <string name="update_body">Apri la pagina, scarica l\'APK e installalo sopra questa versione: le impostazioni restano.</string>
     <string name="update_later">Non ora</string>
@@ -341,4 +341,9 @@
     <string name="receive_trouble">Il telefono non apre la pagina? Scrivi l\'indirizzo con http:// all\'inizio, controlla che non sia sulla rete ospiti e disattiva eventuali VPN o app che bloccano la pubblicità.</string>
     <string name="receive_expired">La ricezione si è fermata da sola: avviala di nuovo per avere un nuovo indirizzo.</string>
     <string name="library_no_picker">Questo dispositivo non ha il selettore di cartelle di Android: non è possibile scegliere una cartella da qui.</string>
+    <string name="update_check_now">Controlla ora</string>
+    <string name="update_checking">Controllo in corso…</string>
+    <string name="update_available">È disponibile la versione %1$s.</string>
+    <string name="update_up_to_date">Hai già l\'ultima versione (%1$s).</string>
+    <string name="update_check_failed">Controllo non riuscito: verifica la connessione e riprova.</string>
 </resources>

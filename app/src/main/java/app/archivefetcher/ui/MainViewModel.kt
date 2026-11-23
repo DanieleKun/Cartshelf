@@ -160,12 +160,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private var libraryJob: Job? = null
 
-    /**
-     * A newer release on GitHub, shown on the home screen until opened or dismissed. Declared before `init`: the check
-     * there can finish without suspending (already checked today) and assign it during construction.
-     */
+    /** A newer release on GitHub, shown on the home screen until opened or dismissed. */
     var updateInfo by mutableStateOf<UpdateInfo?>(null)
         private set
+
+    private var updateJob: Job? = null
 
     init {
         graph.downloads.resumeRestored()
@@ -181,7 +180,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             // Consoles added to the index by the background job become searchable without retyping.
             graph.index.indexed.drop(1).collect { if (searchQuery.isNotBlank()) onSearchQuery(searchQuery) }
         }
-        viewModelScope.launch { updateInfo = graph.updates.check() }
     }
 
     override fun onCleared() {
@@ -190,6 +188,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     // ---- New version ---------------------------------------------------------------------------------------
+
+    /** Called whenever the home screen comes into view; the checker itself keeps the requests rare. */
+    fun checkForUpdate() {
+        if (updateJob?.isActive == true) return
+        updateJob = viewModelScope.launch { updateInfo = graph.updates.check() }
+    }
+
+    /** The settings asked GitHub directly; a newer version also shows on the home screen. */
+    fun showUpdate(info: UpdateInfo) {
+        updateInfo = info
+    }
 
     fun dismissUpdate() {
         updateInfo?.let(graph.updates::dismiss)

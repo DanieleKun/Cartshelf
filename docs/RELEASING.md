@@ -29,3 +29,6 @@ Add these repository secrets (Settings → Secrets and variables → Actions):
 Then pushing a tag `v*` runs the tests, builds the signed APK with `versionName` taken from the tag and the workflow
 run number plus 100 as `versionCode` (so it stays above the locally built 1.1.0, versionCode 3), and attaches `cartshelf-<version>.apk` to the release. Without the secrets the
 workflow only reports that signing is not configured.
+
+Release notes: write them in `docs/releases/v<version>.md` before pushing the tag. The workflow puts them at the top
+of the release, and the app shows their first lines in the new-version notice, so keep them short and plain.

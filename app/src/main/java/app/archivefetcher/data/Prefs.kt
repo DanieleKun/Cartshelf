@@ -7,7 +7,7 @@ import androidx.core.content.edit
  * Small key/value store for user settings. Internet Archive keys, the session cookies and the account email are
  * encrypted with a key kept in the Android Keystore (see [SecretCipher]); nothing leaves the device.
  */
-class Prefs(context: Context) {
+class Prefs(context: Context) : UpdateStore {
     private val sp = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
     private val cipher = SecretCipher()
 
@@ -81,26 +81,35 @@ class Prefs(context: Context) {
         get() = sp.getBoolean(KEY_COVERS, true)
         set(value) = sp.edit { putBoolean(KEY_COVERS, value) }
 
-    /** Look for a newer version on GitHub at most once a day. */
-    var checkUpdates: Boolean
+    /** Look for a newer version on GitHub when the app opens. */
+    override var checkUpdates: Boolean
         get() = sp.getBoolean(KEY_CHECK_UPDATES, true)
         set(value) = sp.edit { putBoolean(KEY_CHECK_UPDATES, value) }
 
-    var lastUpdateCheck: Long
+    override var lastUpdateCheck: Long
         get() = sp.getLong(KEY_LAST_UPDATE_CHECK, 0)
         set(value) = sp.edit { putLong(KEY_LAST_UPDATE_CHECK, value) }
 
     /** The newest release found on GitHub at the last check, and its page. */
-    var latestVersion: String
+    override var latestVersion: String
         get() = sp.getString(KEY_LATEST_VERSION, "").orEmpty()
         set(value) = sp.edit { putString(KEY_LATEST_VERSION, value) }
 
-    var latestUrl: String
+    override var latestUrl: String
         get() = sp.getString(KEY_LATEST_URL, "").orEmpty()
         set(value) = sp.edit { putString(KEY_LATEST_URL, value) }
 
+    /** What is new in that release, as plain text, and the tag GitHub gave the answer (to ask "anything new?"). */
+    override var latestNotes: String
+        get() = sp.getString(KEY_LATEST_NOTES, "").orEmpty()
+        set(value) = sp.edit { putString(KEY_LATEST_NOTES, value) }
+
+    override var latestEtag: String
+        get() = sp.getString(KEY_LATEST_ETAG, "").orEmpty()
+        set(value) = sp.edit { putString(KEY_LATEST_ETAG, value) }
+
     /** A version the user chose not to hear about again. */
-    var dismissedVersion: String
+    override var dismissedVersion: String
         get() = sp.getString(KEY_DISMISSED_VERSION, "").orEmpty()
         set(value) = sp.edit { putString(KEY_DISMISSED_VERSION, value) }
 
@@ -211,6 +220,8 @@ class Prefs(context: Context) {
         private const val KEY_DISMISSED_VERSION = "dismissed_version"
         private const val KEY_LATEST_VERSION = "latest_version"
         private const val KEY_LATEST_URL = "latest_url"
+        private const val KEY_LATEST_NOTES = "latest_notes"
+        private const val KEY_LATEST_ETAG = "latest_etag"
         private const val KEY_DELETE_ZIP = "delete_zip_after_extract"
     }
 }

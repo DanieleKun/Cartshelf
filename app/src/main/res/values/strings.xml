@@ -306,7 +306,7 @@
     <string name="show_covers">Show box art</string>
     <string name="covers_hint">Pictures come from the libretro thumbnails archive (the one RetroArch uses) and are kept on the device. Turned off, the app does not contact that site.</string>
     <string name="check_updates">Tell me about new versions</string>
-    <string name="check_updates_hint">Once a day the app reads the public page of the latest release on GitHub. Nothing about you is sent.</string>
+    <string name="check_updates_hint">When you open the app, at most every 10 minutes, it asks GitHub whether there is a new version. Nothing about you is sent.</string>
     <string name="update_title">Cartshelf %1$s is available</string>
     <string name="update_body">Open the page, download the APK and install it over this one: your settings stay.</string>
     <string name="update_later">Not now</string>
@@ -353,4 +353,9 @@
     <string name="receive_trouble">The phone cannot open the page? Type the address with http:// in front, make sure it is not on a guest network, and turn off any VPN or ad-blocking app.</string>
     <string name="receive_expired">Receiving stopped by itself: start it again to get a new address.</string>
     <string name="library_no_picker">This device has no Android folder picker, so a folder cannot be chosen here.</string>
+    <string name="update_check_now">Check now</string>
+    <string name="update_checking">Checking…</string>
+    <string name="update_available">Version %1$s is available.</string>
+    <string name="update_up_to_date">You already have the latest version (%1$s).</string>
+    <string name="update_check_failed">The check failed: check your connection and try again.</string>
 </resources>
