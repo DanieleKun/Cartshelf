@@ -68,6 +68,23 @@ class UpdateAndQueueTest {
     }
 
     @Test
+    fun `a silent connection does not hold up the page`() {
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+        val receiver = AddonReceiver(scope, deliver = Dispatchers.IO)
+        val address = receiver.start(page) { }
+        assumeTrue("no local network address on this machine", address != null)
+        val url = URL(address!!)
+        java.net.Socket(url.host, url.port).use { _ ->
+            val started = System.nanoTime()
+            val get = url.openConnection() as HttpURLConnection
+            assertEquals(200, get.responseCode)
+            assertTrue((System.nanoTime() - started) / 1_000_000 < 2_000)
+        }
+        receiver.stop()
+        scope.cancel()
+    }
+
+    @Test
     fun `the receiver answers only on its secret path and hands over what was sent`() {
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
         val received = java.util.concurrent.LinkedBlockingQueue<String>()
@@ -103,8 +120,17 @@ class UpdateAndQueueTest {
         assumeTrue("no local network address on this machine", address != null)
         try {
             val base = address!!.substringBeforeLast('/')
-            repeat(20) { i ->
-                val wrong = URL("$base/guess$i").openConnection() as HttpURLConnection
+            val token = address.substringAfterLast('/')
+            // What a browser asks for by itself is not a guess.
+            repeat(25) {
+                val icon = URL("$base/favicon.ico").openConnection() as HttpURLConnection
+                assertEquals(404, icon.responseCode)
+            }
+            assertEquals(200, (URL(address).openConnection() as HttpURLConnection).responseCode)
+            val guesses = listOf("abcd", "bcde", "cdef", "defg", "efgh", "fghj", "ghjk", "hjkm", "jkmn", "kmnp", "mnpq", "npqr",
+                "pqrs", "qrst", "rstu", "stuv", "tuvw", "uvwx", "vwxy", "wxyz", "xyz2").filter { it != token }.take(20)
+            guesses.forEach { guess ->
+                val wrong = URL("$base/$guess").openConnection() as HttpURLConnection
                 assertEquals(404, wrong.responseCode)
             }
             assertTrue(stopped.await(5, java.util.concurrent.TimeUnit.SECONDS))

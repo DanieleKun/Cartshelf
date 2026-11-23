@@ -79,11 +79,11 @@
     <string name="language_it">Italiano</string>
     <string name="settings_parallel">Download in parallelo</string>
     <string name="settings_parallel_hint">Massimo %1$d: troppe connessioni contemporanee fanno bloccare il tuo IP da Internet Archive.</string>
-    <string name="settings_account">Account Internet Archive (per le raccolte protette)</string>
+    <string name="settings_account">Account Internet Archive</string>
     <string name="access_key">Access key</string>
     <string name="secret_key">Secret key</string>
     <string name="get_keys">Ottieni le chiavi su archive.org</string>
-    <string name="keys_hint">Facoltativo: serve solo per le raccolte che richiedono un account. Accedi su archive.org, apri la pagina delle chiavi e incolla qui i due valori. Restano cifrati su questo dispositivo.</string>
+    <string name="keys_hint">Su archive.org apri la pagina delle chiavi, copia Access key e Secret key e incollale qui. Restano cifrate su questo dispositivo.</string>
     <string name="keys_link_copied">Nessun browser trovato, link copiato negli appunti</string>
     <string name="notice_title">Avviso</string>
     <string name="notice_body">Questa app non ospita file e non ha un catalogo suo: tutto arriva dagli addon che aggiungi. La responsabilità di ciò che scarichi è solo tua: scarica solo contenuti che hai il diritto di possedere.</string>
@@ -115,21 +115,18 @@
     <string name="option_on">Sì</string>
     <string name="option_off">No</string>
     <string name="extract_hint">Decomprime gli ZIP nella stessa cartella. Se l\'estrazione fallisce lo ZIP resta.</string>
-
-    <string name="settings_login">Accedi con il tuo account</string>
     <string name="login_email">Email</string>
     <string name="login_password">Password</string>
     <string name="login_button">Accedi</string>
     <string name="login_busy">Accesso in corso…</string>
     <string name="login_logout">Esci</string>
-    <string name="login_ok">✓ Connesso come %1$s</string>
+    <string name="login_ok">Connesso come %1$s</string>
     <string name="login_failed">Accesso non riuscito: %1$s</string>
     <string name="login_err_account">account non trovato</string>
     <string name="login_err_password">password errata. Se su archive.org entri con Google, il tuo account non ha ancora una password di archive.org: vedi la nota qui sotto</string>
-    <string name="login_google_hint">Entri su archive.org con Google? La password di Google qui non funziona. Su archive.org apri la pagina di accesso, scegli “Password dimenticata?” e inserisci la stessa email per creare una password di archive.org, poi accedi qui. Le chiavi di accesso qui sopra funzionano senza password.</string>
+    <string name="login_google_hint">Entri su archive.org con Google? La password di Google qui non funziona. Puoi usare le chiavi S3 qui sopra, oppure creare una password di archive.org con “Password dimenticata?” nella pagina di accesso di archive.org.</string>
     <string name="show_secret">Mostra</string>
     <string name="hide_secret">Nascondi</string>
-    <string name="login_hint">In alternativa alle chiavi. La password va solo ad archive.org e non viene salvata: l\'app conserva solo la sessione, cifrata.</string>
     <string name="auth_keys">chiavi di accesso</string>
     <string name="auth_account">accesso con account</string>
     <string name="err_login_refused">Internet Archive ha rifiutato l\'accesso (HTTP %1$d da %2$s, inviato: %3$s). Controlla le chiavi oppure accedi con il tuo account in Opzioni.</string>
@@ -289,7 +286,10 @@
     <string name="quick_no_unofficial">Senza hack e pirata</string>
     <string name="filter_versions">Versioni</string>
     <string name="one_game_hint">Uno per gioco tiene la versione migliore di ogni gioco per la tua lingua: prima quelle nella tua lingua, poi la regione più vicina, poi la revisione più recente. Tutti i suoi dischi restano.</string>
-    <string name="games_count">%1$d giochi</string>
+    <plurals name="games_count">
+        <item quantity="one">%d gioco</item>
+        <item quantity="other">%d giochi</item>
+    </plurals>
     <string name="settings_list">Elenco giochi</string>
     <string name="show_covers">Mostra le copertine</string>
     <string name="covers_hint">Le immagini arrivano dall\'archivio libretro-thumbnails (lo stesso di RetroArch) e restano salvate sul dispositivo. Se le disattivi, l\'app non contatta quel sito.</string>
@@ -320,4 +320,25 @@
         <item quantity="one">%d disco</item>
         <item quantity="other">%d dischi</item>
     </plurals>
+    <string name="account_intro">Serve solo per le raccolte che richiedono un account. Basta un solo metodo: il più semplice è accedere con email e password.</string>
+    <string name="account_privacy">La password va solo ad archive.org e non viene salvata: l\'app conserva la sessione, cifrata. Le chiavi e la sessione non lasciano mai questo dispositivo, tranne verso archive.org.</string>
+    <string name="login_missing">Inserisci email e password.</string>
+    <string name="login_saved">Accesso eseguito: le raccolte protette ora usano il tuo account.</string>
+    <string name="login_logged_out">Sei uscito dall\'account.</string>
+    <string name="keys_use">Entri con Google? Usa le chiavi S3</string>
+    <string name="keys_save">Salva le chiavi</string>
+    <string name="keys_saved">Chiavi salvate e cifrate su questo dispositivo.</string>
+    <string name="keys_saved_status">Chiavi S3 salvate</string>
+    <string name="keys_remove">Rimuovi le chiavi</string>
+    <string name="keys_removed">Chiavi rimosse.</string>
+    <string name="keys_incomplete">Inserisci entrambe le chiavi.</string>
+    <string name="storage_internal">Memoria interna</string>
+    <string name="storage_card">Scheda SD</string>
+    <string name="library_saved">Cartella salvata: %1$s</string>
+    <string name="library_failed">Non è stato possibile usare questa cartella. Scegline un\'altra.</string>
+    <string name="receive_copy">Copia</string>
+    <string name="receive_copied">Indirizzo copiato</string>
+    <string name="receive_trouble">Il telefono non apre la pagina? Scrivi l\'indirizzo con http:// all\'inizio, controlla che non sia sulla rete ospiti e disattiva eventuali VPN o app che bloccano la pubblicità.</string>
+    <string name="receive_expired">La ricezione si è fermata da sola: avviala di nuovo per avere un nuovo indirizzo.</string>
+    <string name="library_no_picker">Questo dispositivo non ha il selettore di cartelle di Android: non è possibile scegliere una cartella da qui.</string>
 </resources>

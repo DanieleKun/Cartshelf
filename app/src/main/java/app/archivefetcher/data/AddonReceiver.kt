@@ -10,6 +10,8 @@ import java.net.NetworkInterface
 import java.net.ServerSocket
 import java.net.Socket
 import java.net.SocketTimeoutException
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicInteger
 import java.security.SecureRandom
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.cancellation.CancellationException
@@ -17,6 +19,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.job
+import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -35,19 +39,29 @@ class AddonReceiver(
     private var server: ServerSocket? = null
     private var job: Job? = null
 
+    /** Connections being answered; closed on stop, since a blocked read does not notice a cancelled coroutine. */
+    private val clients: MutableSet<Socket> = ConcurrentHashMap.newKeySet()
+
+    /** One upload at a time, so parallel connections never hold several large bodies in memory. */
+    private val upload = Semaphore(1)
+
     /** The address to open on the phone, e.g. `http://192.168.1.20:41234/k7p2`; null when there is no local network. */
     fun start(page: ReceiverPage, onStopped: () -> Unit = {}, onReceived: suspend (String) -> Unit): String? {
         stop()
         val address = localAddress() ?: return null
-        val socket = runCatching { ServerSocket(0, BACKLOG, address) }.getOrNull() ?: return null
+        // A fixed port keeps the address short and the same every time; any free port if it is taken.
+        val socket = runCatching { ServerSocket(PREFERRED_PORT, BACKLOG, address) }.getOrNull()
+            ?: runCatching { ServerSocket(0, BACKLOG, address) }.getOrNull()
+            ?: return null
         val token = newToken()
         server = socket
         val stopAt = System.currentTimeMillis() + LIFETIME_MS
         job = scope.launch(Dispatchers.IO) {
-            var wrongPaths = 0
+            val guesses = AtomicInteger()
+            val open = AtomicInteger()
             try {
                 socket.soTimeout = ACCEPT_POLL_MS
-                while (isActive && !socket.isClosed && System.currentTimeMillis() < stopAt && wrongPaths < MAX_WRONG_PATHS) {
+                while (isActive && !socket.isClosed && System.currentTimeMillis() < stopAt && guesses.get() < MAX_WRONG_PATHS) {
                     val client = try {
                         socket.accept()
                     } catch (_: SocketTimeoutException) {
@@ -55,17 +69,35 @@ class AddonReceiver(
                     } catch (_: Exception) {
                         break
                     }
-                    try {
-                        if (!client.use { handle(it, token, page, onReceived) }) wrongPaths++
-                    } catch (e: CancellationException) {
-                        throw e
-                    } catch (_: Exception) {
-                        // A broken, slow or malformed request only ends that connection.
+                    // Browsers open spare connections that may never send anything; each one gets its own worker so
+                    // a silent one never holds up the real request.
+                    if (open.incrementAndGet() > MAX_CONNECTIONS) {
+                        open.decrementAndGet()
+                        runCatching { client.close() }
+                        continue
+                    }
+                    clients += client
+                    launch {
+                        try {
+                            val outcome = client.use { handle(it, token, page, onReceived) }
+                            // The limit holds even with several guesses answered at once: the door closes at once.
+                            if (outcome == Outcome.Guess && guesses.incrementAndGet() >= MAX_WRONG_PATHS) runCatching { socket.close() }
+                        } catch (e: CancellationException) {
+                            throw e
+                        } catch (_: Exception) {
+                            // A broken, slow or malformed request only ends that connection.
+                        } finally {
+                            clients -= client
+                            open.decrementAndGet()
+                        }
                     }
                 }
             } finally {
                 runCatching { socket.close() }
+                closeClients()
             }
+            // Every answer is finished before the screen hears about the stop, so nothing arrives after it.
+            coroutineContext.job.children.forEach { it.join() }
             // Stopped by itself (time or guesses), not by [stop]: the screen is told so it hides the address.
             if (isActive) withContext(deliver) { onStopped() }
         }
@@ -77,22 +109,30 @@ class AddonReceiver(
         job = null
         runCatching { server?.close() }
         server = null
+        closeClients()
     }
 
-    /** False when the request asked for a wrong path. */
-    private suspend fun handle(socket: Socket, token: String, page: ReceiverPage, onReceived: suspend (String) -> Unit): Boolean {
+    private fun closeClients() {
+        clients.toList().forEach { runCatching { it.close() } }
+        clients.clear()
+    }
+
+    private enum class Outcome { Served, Ignored, Guess }
+
+    /** [Outcome.Guess] when the request tried a path shaped like the secret one, as someone guessing it would. */
+    private suspend fun handle(socket: Socket, token: String, page: ReceiverPage, onReceived: suspend (String) -> Unit): Outcome {
         socket.soTimeout = TIMEOUT_MS
         val deadline = System.currentTimeMillis() + REQUEST_DEADLINE_MS
         val input = BufferedInputStream(socket.getInputStream())
-        val requestLine = readLine(input, deadline) ?: return true
+        val requestLine = readLine(input, deadline) ?: return Outcome.Ignored
         val parts = requestLine.split(' ')
-        if (parts.size < 2) return true
+        if (parts.size < 2) return Outcome.Ignored
         var length = 0L
         var headers = 0
         while (true) {
-            val header = readLine(input, deadline) ?: return true
+            val header = readLine(input, deadline) ?: return Outcome.Ignored
             if (header.isEmpty()) break
-            if (++headers > MAX_HEADERS) return true
+            if (++headers > MAX_HEADERS) return Outcome.Ignored
             if (header.startsWith("content-length:", ignoreCase = true)) length = header.substringAfter(':').trim().toLongOrNull() ?: 0
         }
         val output = socket.getOutputStream()
@@ -107,23 +147,35 @@ class AddonReceiver(
         }
         if (parts[1] != "/$token") {
             respond("404 Not Found", page.html(sent = false, notFound = true))
-            return false
+            // The browser asks for /favicon.ico and similar by itself; only token-shaped paths count as guesses.
+            return if (looksLikeToken(parts[1])) Outcome.Guess else Outcome.Ignored
         }
         when (parts[0]) {
             "GET" -> respond("200 OK", page.html(sent = false))
             "POST" -> {
                 if (length <= 0 || length > MAX_BODY) {
                     respond("413 Payload Too Large", page.html(sent = false))
-                    return true
+                    return Outcome.Served
                 }
-                val text = readBody(input, length.toInt(), deadline).toString(Charsets.UTF_8).trim()
-                if (text.isNotEmpty()) withContext(deliver) { onReceived(text) }
+                if (!upload.tryAcquire()) {
+                    respond("503 Service Unavailable", page.html(sent = false))
+                    return Outcome.Served
+                }
+                try {
+                    val text = readBody(input, length.toInt(), deadline).toString(Charsets.UTF_8).trim()
+                    if (text.isNotEmpty()) withContext(deliver) { onReceived(text) }
+                } finally {
+                    upload.release()
+                }
                 respond("200 OK", page.html(sent = true))
             }
             else -> respond("405 Method Not Allowed", page.html(sent = false))
         }
-        return true
+        return Outcome.Served
     }
+
+    private fun looksLikeToken(path: String): Boolean =
+        path.length == TOKEN_LENGTH + 1 && path[0] == '/' && path.drop(1).all { it in TOKEN_CHARS }
 
     /** A client sending a byte now and then would otherwise hold the receiver forever. */
     private fun checkDeadline(deadline: Long) {
@@ -167,7 +219,7 @@ class AddonReceiver(
         runCatching {
             NetworkInterface.getNetworkInterfaces().toList()
                 .filter { it.isUp && !it.isLoopback && !it.isVirtual && HOME_INTERFACES.any(it.name::startsWith) }
-                .sortedBy { if (it.name.startsWith("wlan")) 0 else 1 }
+                .sortedBy { if (it.name.startsWith("wl") || it.name.startsWith("wireless")) 0 else 1 }
                 .flatMap { it.inetAddresses.toList() }
                 .firstOrNull { it is Inet4Address && it.isSiteLocalAddress }
         }.getOrNull()
@@ -182,10 +234,16 @@ class AddonReceiver(
         const val MAX_HEADERS = 50
         const val MAX_LINE = 8 * 1024
         const val MAX_BODY = 5L * 1024 * 1024
-        const val TOKEN_LENGTH = 6
+        /** Short enough to type on a phone; with [MAX_WRONG_PATHS] a guesser has about 1 chance in 46,000. */
+        const val TOKEN_LENGTH = 4
+        const val PREFERRED_PORT = 8080
+        const val MAX_CONNECTIONS = 8
 
-        /** Wi-Fi (also as a hotspot) and Ethernet. */
-        val HOME_INTERFACES = listOf("wlan", "swlan", "ap", "eth")
+        /**
+         * Wi-Fi (also as a hotspot) and Ethernet, as Android names them (wlan0, ap0, eth0), as Linux does (wlp2s0,
+         * enp3s0) and as Java does on Windows (wireless_32768, ethernet_32769).
+         */
+        val HOME_INTERFACES = listOf("wl", "swlan", "ap", "eth", "en", "wireless", "ethernet")
         const val TOKEN_CHARS = "abcdefghjkmnpqrstuvwxyz23456789"
     }
 }

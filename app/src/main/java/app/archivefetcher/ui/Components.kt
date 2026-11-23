@@ -535,3 +535,19 @@ const val DURATION_SHORT = 140
 const val DURATION_MEDIUM = 260
 private const val DISABLED_ALPHA = 0.45f
 private const val MARQUEE_DELAY_MS = 1500
+
+/** A short confirmation that something was saved, in the success colour with a check mark. */
+@Composable
+fun DoneNote(text: String, modifier: Modifier = Modifier) {
+    Row(
+        modifier
+            .fillMaxWidth()
+            .background(Palette.Success.copy(alpha = 0.12f), RoundedCornerShape(12.dp))
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Icon(AppIcons.Check, contentDescription = null, tint = Palette.Success, modifier = Modifier.size(18.dp))
+        Text(text, style = AppType.Label.copy(color = Palette.Success))
+    }
+}

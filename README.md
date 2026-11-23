@@ -18,7 +18,7 @@ files. You are responsible for the addons you add and for what you download.
 - Multi-disc games get a `.m3u` playlist next to their discs, so the emulator shows one entry and swaps discs
 - "One game per title" keeps the best version for your language and region; quick switches hide betas, demos, hacks and pirate dumps
 - Multi-disc games are one entry in the list, and download together
-- Box art from the libretro-thumbnails project (can be turned off)
+- Box art from the libretro-thumbnails project, with the same name fallbacks RetroArch uses (can be turned off)
 - Controller shortcuts: L1/R1 jump by letter, X search, Y select all, Start download, Select filters
 - Add an addon from your phone: open the address shown on the device in the phone's browser and paste the link or pick the file
 - The download queue survives restarts; a notice appears when a new version is out on GitHub
@@ -26,7 +26,7 @@ files. You are responsible for the addons you add and for what you download.
 - One library folder with a sub-folder per console, named for ES-DE / ArkOS / ROCKNIX, Batocera / Knulli, or in full
 - Files already in the folder are marked, and can be hidden
 - Parallel downloads that continue with the screen off, pause and resume, optional ZIP extraction, MD5 check
-- Internet Archive login (email and password, or S3 keys) for items that require it, stored encrypted on the device
+- Internet Archive account for items that require it: email and password, or the S3 keys for accounts that sign in with Google; stored encrypted on the device
 - No tracking, no analytics, https only
 
 ## Getting started

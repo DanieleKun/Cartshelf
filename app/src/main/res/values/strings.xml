@@ -85,11 +85,11 @@
     <string name="language_it">Italiano</string>
     <string name="settings_parallel">Parallel downloads</string>
     <string name="settings_parallel_hint">Max %1$d: too many simultaneous connections can get your IP blocked by Internet Archive.</string>
-    <string name="settings_account">Internet Archive account (for locked collections)</string>
+    <string name="settings_account">Internet Archive account</string>
     <string name="access_key">Access key</string>
     <string name="secret_key">Secret key</string>
     <string name="get_keys">Get your keys on archive.org</string>
-    <string name="keys_hint">Optional: needed only for collections that require an account. Sign in on archive.org, open the keys page and paste the two values here. They are stored encrypted on this device.</string>
+    <string name="keys_hint">On archive.org open the keys page, copy the Access key and the Secret key and paste them here. They stay encrypted on this device.</string>
     <string name="keys_link_copied">No browser found, link copied to the clipboard</string>
     <string name="notice_title">Notice</string>
     <string name="notice_body">This app hosts no files and has no catalog of its own: everything comes from the addons you add. You alone are responsible for what you download: download only content you have the right to own.</string>
@@ -125,20 +125,18 @@
     <string name="extract_hint">Unpacks ZIP files into the same folder. If extraction fails the ZIP is kept.</string>
 
     <!-- Account login -->
-    <string name="settings_login">Log in with your account</string>
     <string name="login_email">Email</string>
     <string name="login_password">Password</string>
     <string name="login_button">Log in</string>
     <string name="login_busy">Logging in…</string>
     <string name="login_logout">Log out</string>
-    <string name="login_ok">✓ Logged in as %1$s</string>
+    <string name="login_ok">Logged in as %1$s</string>
     <string name="login_failed">Login failed: %1$s</string>
     <string name="login_err_account">account not found</string>
     <string name="login_err_password">wrong password. If you sign in to archive.org with Google, your account has no archive.org password yet: see the note below</string>
-    <string name="login_google_hint">Signing in to archive.org with Google? Your Google password does not work here. On archive.org open the login page, choose “Forgot password?” and enter the same email to create an archive.org password, then log in here. The access keys above work without a password.</string>
+    <string name="login_google_hint">Signing in to archive.org with Google? Your Google password does not work here. Use the S3 keys above, or create an archive.org password with “Forgot password?” on the archive.org login page.</string>
     <string name="show_secret">Show</string>
     <string name="hide_secret">Hide</string>
-    <string name="login_hint">An alternative to the keys. The password goes only to archive.org and is never saved: the app keeps only the session, encrypted.</string>
     <string name="auth_keys">access keys</string>
     <string name="auth_account">account login</string>
     <string name="err_login_refused">Internet Archive refused the login (HTTP %1$d from %2$s, sent: %3$s). Check the keys, or log in with your account in Options.</string>
@@ -300,7 +298,10 @@
     <string name="quick_no_unofficial">No hacks or pirate</string>
     <string name="filter_versions">Versions</string>
     <string name="one_game_hint">One per game keeps the best version of each game for your language: first the ones in your language, then the closest region, then the latest revision. All its discs stay.</string>
-    <string name="games_count">%1$d games</string>
+    <plurals name="games_count">
+        <item quantity="one">%d game</item>
+        <item quantity="other">%d games</item>
+    </plurals>
     <string name="settings_list">Game list</string>
     <string name="show_covers">Show box art</string>
     <string name="covers_hint">Pictures come from the libretro thumbnails archive (the one RetroArch uses) and are kept on the device. Turned off, the app does not contact that site.</string>
@@ -331,4 +332,25 @@
         <item quantity="one">%d disc</item>
         <item quantity="other">%d discs</item>
     </plurals>
+    <string name="account_intro">Needed only for collections that require an account. One way is enough: the simplest is logging in with email and password.</string>
+    <string name="account_privacy">The password goes only to archive.org and is never saved: the app keeps the session, encrypted. Keys and session never leave this device, except to archive.org.</string>
+    <string name="login_missing">Enter your email and password.</string>
+    <string name="login_saved">Logged in: locked collections now use your account.</string>
+    <string name="login_logged_out">You are logged out.</string>
+    <string name="keys_use">Sign in with Google? Use the S3 keys</string>
+    <string name="keys_save">Save the keys</string>
+    <string name="keys_saved">Keys saved, encrypted on this device.</string>
+    <string name="keys_saved_status">S3 keys saved</string>
+    <string name="keys_remove">Remove the keys</string>
+    <string name="keys_removed">Keys removed.</string>
+    <string name="keys_incomplete">Enter both keys.</string>
+    <string name="storage_internal">Internal storage</string>
+    <string name="storage_card">SD card</string>
+    <string name="library_saved">Folder saved: %1$s</string>
+    <string name="library_failed">This folder cannot be used. Pick another one.</string>
+    <string name="receive_copy">Copy</string>
+    <string name="receive_copied">Address copied</string>
+    <string name="receive_trouble">The phone cannot open the page? Type the address with http:// in front, make sure it is not on a guest network, and turn off any VPN or ad-blocking app.</string>
+    <string name="receive_expired">Receiving stopped by itself: start it again to get a new address.</string>
+    <string name="library_no_picker">This device has no Android folder picker, so a folder cannot be chosen here.</string>
 </resources>

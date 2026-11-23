@@ -17,8 +17,8 @@ android {
         minSdk = 24
         targetSdk = 35
         // The release workflow passes the tag as -PversionName=1.2.3 and the run number as -PversionCode=N.
-        versionCode = (findProperty("versionCode") as String?)?.toIntOrNull() ?: 4
-        versionName = (findProperty("versionName") as String?) ?: "1.2.0"
+        versionCode = (findProperty("versionCode") as String?)?.toIntOrNull() ?: 5
+        versionName = (findProperty("versionName") as String?) ?: "1.3.0"
     }
 
     signingConfigs {

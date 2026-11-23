@@ -4,8 +4,11 @@ import app.archivefetcher.data.CatalogEntry
 import app.archivefetcher.data.RemoteFile
 import app.archivefetcher.data.SourceTypes
 
-/** A console as shown in the app. [id] is the stable key used for preferences such as the destination folder. */
-data class ConsoleInfo(val id: String, val name: String, val categoryId: String)
+/**
+ * A console as shown in the app. [id] is the stable key used for preferences such as the destination folder.
+ * [thumbnails] is the libretro-thumbnails system an addon named for its box art, when it gave one.
+ */
+data class ConsoleInfo(val id: String, val name: String, val categoryId: String, val thumbnails: String? = null)
 
 data class CatalogConsole(val info: ConsoleInfo, val entries: List<CatalogEntry>)
 
@@ -23,6 +26,7 @@ data class Catalog(val categories: List<CatalogCategory> = emptyList()) {
 
 object CatalogMerger {
     private class ConsoleBuilder(val id: String, val name: String) {
+        var thumbnails: String? = null
         val entries = ArrayList<CatalogEntry>()
         val seen = HashSet<Pair<String, String>>()
     }
@@ -72,6 +76,7 @@ object CatalogMerger {
                 val categoryBuilder = categories.getOrPut(category.id) { CategoryBuilder(category.id, category.name) }
                 for (console in category.consoles) {
                     val consoleBuilder = categoryBuilder.consoles.getOrPut(console.id) { ConsoleBuilder(console.id, console.name) }
+                    if (consoleBuilder.thumbnails == null) consoleBuilder.thumbnails = console.thumbnails?.trim()?.takeIf { it.isNotEmpty() }
                     for (collection in console.collections) {
                         val entry = entryOf(manifest.id, collection) ?: continue
                         if (consoleBuilder.seen.add("${entry.sourceType}|${entry.identifier}" to entry.subPath)) {
@@ -85,7 +90,7 @@ object CatalogMerger {
             categories.values.mapNotNull { category ->
                 val consoles = category.consoles.values
                     .filter { it.entries.isNotEmpty() }
-                    .map { CatalogConsole(ConsoleInfo(it.id, it.name, category.id), it.entries.toList()) }
+                    .map { CatalogConsole(ConsoleInfo(it.id, it.name, category.id, it.thumbnails), it.entries.toList()) }
                 if (consoles.isEmpty()) null else CatalogCategory(category.id, category.name, consoles)
             },
         )

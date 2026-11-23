@@ -43,7 +43,13 @@ data class AddonManifest(
 data class ManifestCategory(val id: String, val name: String, val consoles: List<ManifestConsole> = emptyList())
 
 @Serializable
-data class ManifestConsole(val id: String, val name: String, val collections: List<ManifestCollection> = emptyList())
+data class ManifestConsole(
+    val id: String,
+    val name: String,
+    val collections: List<ManifestCollection> = emptyList(),
+    /** Optional: the libretro-thumbnails system with this console's box art, e.g. "Sega - Mega Drive - Genesis". */
+    val thumbnails: String? = null,
+)
 
 @Serializable
 data class ManifestCollection(val title: String, val source: ManifestSource, val format: String? = null)

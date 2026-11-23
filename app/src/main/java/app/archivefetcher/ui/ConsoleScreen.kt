@@ -1,5 +1,6 @@
 package app.archivefetcher.ui
 
+import android.widget.Toast
 import android.content.Intent
 import android.net.Uri
 import android.view.InputDevice
@@ -133,7 +134,7 @@ private fun ConsoleContent(vm: MainViewModel, console: ConsoleInfo) {
         if (chosen.isNotEmpty()) {
             if (!hasDestination) {
                 pendingDownload = chosen
-                picker.launch(null)
+                if (!launchFolderPicker(context, picker)) Toast.makeText(context, context.getString(R.string.library_no_picker), Toast.LENGTH_LONG).show()
             } else {
                 vm.enqueue(console, chosen)
             }
@@ -151,7 +152,9 @@ private fun ConsoleContent(vm: MainViewModel, console: ConsoleInfo) {
         title = console.name,
         subtitle = folderName?.let { stringResource(R.string.folder_label, it) } ?: stringResource(R.string.folder_not_set),
         onBack = { vm.back() },
-        actions = { IconAction(AppIcons.Folder, stringResource(R.string.folder_choose), { picker.launch(null) }) },
+        actions = { IconAction(AppIcons.Folder, stringResource(R.string.folder_choose), {
+            if (!launchFolderPicker(context, picker)) Toast.makeText(context, context.getString(R.string.library_no_picker), Toast.LENGTH_LONG).show()
+        }) },
     ) {
         Column(
             Modifier.fillMaxSize().onPreviewKeyEvent { event ->
@@ -471,7 +474,7 @@ private fun GameRow(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             SelectMark(selected)
-            if (covers) GameCover(console.name, file.displayName, entry.title, Modifier.size(COVER_SIZE))
+            if (covers) GameCover(console, file.displayName, entry.title, Modifier.size(COVER_SIZE))
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                 Text(entry.title, style = AppType.Body, maxLines = 3, overflow = TextOverflow.Ellipsis)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -535,7 +538,7 @@ private fun ActionBar(
     onDownload: () -> Unit,
 ) {
     SelectionBar(
-        if (selectedCount == 0) notice ?: stringResource(R.string.games_count, visibleCount)
+        if (selectedCount == 0) notice ?: pluralStringResource(R.plurals.games_count, visibleCount, visibleCount)
         else stringResource(R.string.selected_summary, selectedCount, formatBytes(selectedBytes)),
     ) {
         AppButton(

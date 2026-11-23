@@ -208,6 +208,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     var receiverUnavailable by mutableStateOf(false)
         private set
 
+    /** True when receiving stopped by itself (time limit or too many wrong addresses), so the screen can say so. */
+    var receiverExpired by mutableStateOf(false)
+        private set
+
     /** An addon file sent from the phone, waiting for the user to confirm it on the device. */
     var receivedAddon by mutableStateOf<String?>(null)
         private set
@@ -222,7 +226,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             sent = graph.texts.get(R.string.receive_page_sent),
             notFound = graph.texts.get(R.string.receive_page_expired),
         )
-        receiverAddress = receiver.start(page, onStopped = { receiverAddress = null }) { text -> onReceived(text) }
+        receiverExpired = false
+        receiverAddress = receiver.start(page, onStopped = {
+            receiverAddress = null
+            receiverExpired = true
+        }) { text -> onReceived(text) }
         receiverUnavailable = receiverAddress == null
     }
 
@@ -230,6 +238,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         receiver.stop()
         receiverAddress = null
         receiverUnavailable = false
+        receiverExpired = false
     }
 
     /** An address only fills the form; a file waits for confirmation. Nothing is installed without the user. */

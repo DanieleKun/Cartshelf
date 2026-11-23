@@ -17,6 +17,7 @@ import app.archivefetcher.download.LaterRunner
 import app.archivefetcher.download.LaterScheduler
 import app.archivefetcher.source.SourceRegistry
 import app.archivefetcher.source.WebSources
+import app.archivefetcher.data.CoverLinkInterceptor
 import app.archivefetcher.data.UpdateChecker
 import app.archivefetcher.download.DownloadQueueStore
 import coil3.ImageLoader
@@ -54,9 +55,12 @@ class Graph(app: Application) {
     val updates = UpdateChecker(client, prefs)
 
     /** Box art loader: the app's own HTTP client (https only, public hosts only) and a 200 MB disk cache. */
+    private val coverClient by lazy { client.newBuilder().addInterceptor(CoverLinkInterceptor()).build() }
+
     val imageLoader: ImageLoader by lazy {
         ImageLoader.Builder(app)
-            .components { add(OkHttpNetworkFetcherFactory(callFactory = { client })) }
+            // Same client (public addresses only, same TLS checks), plus following libretro's link files to the real picture.
+            .components { add(OkHttpNetworkFetcherFactory(callFactory = { coverClient })) }
             .diskCache { DiskCache.Builder().directory(File(app.cacheDir, "covers").toOkioPath()).maxSizeBytes(COVER_CACHE_BYTES).build() }
             .crossfade(true)
             .build()

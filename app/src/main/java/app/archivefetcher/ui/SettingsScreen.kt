@@ -30,21 +30,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import app.archivefetcher.BuildConfig
 import app.archivefetcher.R
-import app.archivefetcher.data.LoginResult
 import app.archivefetcher.data.Prefs
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -52,8 +48,6 @@ fun SettingsScreen(vm: MainViewModel) {
     val context = LocalContext.current
     val prefs = vm.graph.prefs
     var parallel by remember { mutableIntStateOf(prefs.maxParallel) }
-    var access by remember { mutableStateOf(prefs.accessKey) }
-    var secret by remember { mutableStateOf(prefs.secretKey) }
     var language by remember { mutableStateOf(prefs.language) }
 
     var extract by remember { mutableStateOf(prefs.extractZips) }
@@ -62,12 +56,6 @@ fun SettingsScreen(vm: MainViewModel) {
     var covers by remember { mutableStateOf(prefs.showCovers) }
     var updates by remember { mutableStateOf(prefs.checkUpdates) }
     var verify by remember { mutableStateOf(prefs.verifyDownloads) }
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var loggedInAs by remember { mutableStateOf(prefs.loginEmail.takeIf { prefs.hasLogin }) }
-    var loginBusy by remember { mutableStateOf(false) }
-    var loginMessage by remember { mutableStateOf<String?>(null) }
-    val scope = rememberCoroutineScope()
     val power = remember { context.getSystemService(Context.POWER_SERVICE) as PowerManager }
     var unrestricted by remember { mutableStateOf(power.isIgnoringBatteryOptimizations(context.packageName)) }
     var notifications by remember { mutableStateOf(hasNotificationPermission(context)) }
@@ -133,61 +121,7 @@ fun SettingsScreen(vm: MainViewModel) {
                 Hint(stringResource(R.string.background_hint))
             }
             Section(stringResource(R.string.settings_account)) {
-                Hint(stringResource(R.string.keys_hint))
-                AppButton(stringResource(R.string.get_keys), { openKeysPage(context) }, Modifier.fillMaxWidth(), icon = AppIcons.Lock)
-                TextEntry(access, { access = it; prefs.accessKey = it }, stringResource(R.string.tap_to_edit), Modifier.fillMaxWidth(), label = stringResource(R.string.access_key), secret = true)
-                TextEntry(
-                    secret, { secret = it; prefs.secretKey = it }, stringResource(R.string.tap_to_edit), Modifier.fillMaxWidth(),
-                    label = stringResource(R.string.secret_key), secret = true,
-                )
-            }
-            Section(stringResource(R.string.settings_login)) {
-                if (loggedInAs != null) {
-                    StatusRow(stringResource(R.string.login_ok, loggedInAs.orEmpty()), true)
-                    AppButton(stringResource(R.string.login_logout), { prefs.clearLogin(); loggedInAs = null }, Modifier.fillMaxWidth())
-                } else {
-                    TextEntry(
-                        email, { email = it }, stringResource(R.string.tap_to_edit), Modifier.fillMaxWidth(),
-                        label = stringResource(R.string.login_email), keyboardType = KeyboardType.Email,
-                    )
-                    TextEntry(
-                        password, { password = it }, stringResource(R.string.tap_to_edit), Modifier.fillMaxWidth(),
-                        label = stringResource(R.string.login_password), secret = true,
-                    )
-                    AppButton(
-                        stringResource(if (loginBusy) R.string.login_busy else R.string.login_button),
-                        {
-                            if (!loginBusy && email.isNotBlank() && password.isNotEmpty()) {
-                                loginBusy = true
-                                loginMessage = null
-                                scope.launch {
-                                    when (val result = vm.graph.login.login(email.trim(), password)) {
-                                        is LoginResult.Success -> {
-                                            prefs.saveLogin(email.trim(), result.cookies)
-                                            loggedInAs = email.trim()
-                                            password = ""
-                                        }
-                                        is LoginResult.Failure -> {
-                                            val reason = when {
-                                                result.reason == "account_not_found" -> context.getString(R.string.login_err_account)
-                                                result.reason.contains("password") -> context.getString(R.string.login_err_password)
-                                                else -> result.reason
-                                            }
-                                            loginMessage = context.getString(R.string.login_failed, reason)
-                                        }
-                                    }
-                                    loginBusy = false
-                                }
-                            }
-                        },
-                        Modifier.fillMaxWidth(),
-                        highlighted = true,
-                        enabled = !loginBusy,
-                    )
-                    loginMessage?.let { Banner(it, icon = AppIcons.Warning, tint = Palette.Danger) }
-                }
-                Hint(stringResource(R.string.login_hint))
-                if (loggedInAs == null) Hint(stringResource(R.string.login_google_hint))
+                ArchiveAccountSection(vm)
             }
             Section(stringResource(R.string.notice_title)) {
                 Hint(stringResource(R.string.notice_body))
@@ -211,7 +145,7 @@ fun SettingsScreen(vm: MainViewModel) {
 }
 
 @Composable
-private fun StatusRow(label: String, ok: Boolean) {
+internal fun StatusRow(label: String, ok: Boolean) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         Icon(
             if (ok) AppIcons.Check else AppIcons.Info,
@@ -254,9 +188,6 @@ private fun applyLanguage(context: Context, prefs: Prefs, code: String) {
     (context as? Activity)?.recreate()
 }
 
-/** Opens the page where Internet Archive shows the user's keys. */
-private fun openKeysPage(context: Context) = openLink(context, Prefs.KEYS_PAGE_URL)
-
 /** Opens a web page; on devices without a browser (some handhelds) the link is copied instead. */
 internal fun openLink(context: Context, url: String) {
     try {
@@ -280,6 +211,6 @@ private fun Section(title: String, content: @Composable ColumnScope.() -> Unit) 
 }
 
 @Composable
-private fun Hint(text: String) {
+internal fun Hint(text: String) {
     Text(text, style = AppType.Caption)
 }
