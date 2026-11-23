@@ -32,8 +32,6 @@ import app.archivefetcher.data.GameEntries
 import app.archivefetcher.data.GameEntry
 import app.archivefetcher.data.Prefs
 import app.archivefetcher.data.RomVariants
-import app.archivefetcher.data.AddonReceiver
-import app.archivefetcher.data.ReceiverPage
 import app.archivefetcher.data.UpdateInfo
 import java.util.Locale
 import app.archivefetcher.download.IndexJobState
@@ -183,7 +181,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     override fun onCleared() {
-        receiver.stop()
         super.onCleared()
     }
 
@@ -203,77 +200,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun dismissUpdate() {
         updateInfo?.let(graph.updates::dismiss)
         updateInfo = null
-    }
-
-    // ---- Addon from the phone ------------------------------------------------------------------------------
-
-    private val receiver = AddonReceiver(viewModelScope)
-
-    /** The address to open on the phone while the receiver runs; null when it is off. */
-    var receiverAddress by mutableStateOf<String?>(null)
-        private set
-
-    /** True when the receiver could not start because the device is not on a local network. */
-    var receiverUnavailable by mutableStateOf(false)
-        private set
-
-    /** True when receiving stopped by itself (time limit or too many wrong addresses), so the screen can say so. */
-    var receiverExpired by mutableStateOf(false)
-        private set
-
-    /** An addon file sent from the phone, waiting for the user to confirm it on the device. */
-    var receivedAddon by mutableStateOf<String?>(null)
-        private set
-
-    fun startReceiver() {
-        val page = ReceiverPage(
-            title = graph.texts.get(R.string.receive_page_title),
-            intro = graph.texts.get(R.string.receive_page_intro),
-            urlLabel = graph.texts.get(R.string.receive_page_url),
-            send = graph.texts.get(R.string.receive_page_send),
-            fileLabel = graph.texts.get(R.string.receive_page_file),
-            sent = graph.texts.get(R.string.receive_page_sent),
-            notFound = graph.texts.get(R.string.receive_page_expired),
-        )
-        receiverExpired = false
-        receiverAddress = receiver.start(page, onStopped = {
-            receiverAddress = null
-            receiverExpired = true
-        }) { text -> onReceived(text) }
-        receiverUnavailable = receiverAddress == null
-    }
-
-    fun stopReceiver() {
-        receiver.stop()
-        receiverAddress = null
-        receiverUnavailable = false
-        receiverExpired = false
-    }
-
-    /** An address only fills the form; a file waits for confirmation. Nothing is installed without the user. */
-    private fun onReceived(text: String) {
-        if (text.startsWith("http://") || text.startsWith("https://")) {
-            addonUrl = text.take(MAX_RECEIVED_URL)
-            addonMessage = AddonMessage(graph.texts.get(R.string.receive_got_url), false)
-        } else {
-            receivedAddon = text
-            addonMessage = null
-        }
-    }
-
-    fun installReceived() {
-        val text = receivedAddon ?: return
-        if (addonBusy) return
-        receivedAddon = null
-        runAddonAction {
-            val outcome = graph.addons.installFromText(text)
-            val name = outcome.addon.manifest.name
-            AddonMessage(graph.texts.get(if (outcome.replaced) R.string.addon_updated else R.string.addon_added, name), false)
-        }
-    }
-
-    fun discardReceived() {
-        receivedAddon = null
     }
 
     fun open(screen: Screen) {
@@ -758,7 +684,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         const val SEARCH_DEBOUNCE_MS = 250L
         const val SEARCH_LIMIT = 300
         const val STOP_TIMEOUT_MS = 5_000L
-        const val MAX_RECEIVED_URL = 2000
 
         /** Addons are checked again at startup when their stored copy is older than this. */
         const val REFRESH_AFTER_MS = 12L * 60 * 60 * 1000

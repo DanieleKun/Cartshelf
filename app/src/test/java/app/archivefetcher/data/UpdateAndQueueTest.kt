@@ -4,16 +4,9 @@ import app.archivefetcher.download.DownloadQueueStore
 import app.archivefetcher.download.DownloadState
 import app.archivefetcher.download.DownloadTask
 import java.io.File
-import java.net.HttpURLConnection
-import java.net.URL
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
-import org.junit.Assume.assumeTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
@@ -56,87 +49,5 @@ class UpdateAndQueueTest {
         assertTrue(DownloadQueueStore(File(folder.root, "none.json")).load().isEmpty())
         val broken = File(folder.root, "broken.json").apply { writeText("{not json") }
         assertTrue(DownloadQueueStore(broken).load().isEmpty())
-    }
-
-    private val page = ReceiverPage("T", "Intro <b>", "Url", "Send", "File", "Sent", "Expired")
-
-    @Test
-    fun `the phone page escapes its texts`() {
-        val html = page.html(sent = false)
-        assertTrue(html.contains("Intro &lt;b&gt;"))
-        assertTrue(page.html(sent = true).contains("Sent"))
-    }
-
-    @Test
-    fun `a silent connection does not hold up the page`() {
-        val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-        val receiver = AddonReceiver(scope, deliver = Dispatchers.IO)
-        val address = receiver.start(page) { }
-        assumeTrue("no local network address on this machine", address != null)
-        val url = URL(address!!)
-        java.net.Socket(url.host, url.port).use { _ ->
-            val started = System.nanoTime()
-            val get = url.openConnection() as HttpURLConnection
-            assertEquals(200, get.responseCode)
-            assertTrue((System.nanoTime() - started) / 1_000_000 < 2_000)
-        }
-        receiver.stop()
-        scope.cancel()
-    }
-
-    @Test
-    fun `the receiver answers only on its secret path and hands over what was sent`() {
-        val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-        val received = java.util.concurrent.LinkedBlockingQueue<String>()
-        val receiver = AddonReceiver(scope, deliver = Dispatchers.IO)
-        val address = receiver.start(page) { received.add(it) }
-        assumeTrue("no local network address on this machine", address != null)
-        try {
-            val wrong = URL(address!!.substringBeforeLast('/') + "/nope").openConnection() as HttpURLConnection
-            assertEquals(404, wrong.responseCode)
-
-            val get = URL(address).openConnection() as HttpURLConnection
-            assertEquals(200, get.responseCode)
-            assertTrue(get.inputStream.readBytes().toString(Charsets.UTF_8).contains("Intro"))
-
-            val post = URL(address).openConnection() as HttpURLConnection
-            post.requestMethod = "POST"
-            post.doOutput = true
-            post.outputStream.use { it.write("https://example.org/my.addon.json".toByteArray()) }
-            assertEquals(200, post.responseCode)
-            assertEquals("https://example.org/my.addon.json", received.poll(5, java.util.concurrent.TimeUnit.SECONDS))
-        } finally {
-            receiver.stop()
-            scope.cancel()
-        }
-    }
-
-    @Test
-    fun `the receiver stops by itself when someone keeps guessing the address`() {
-        val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-        val stopped = java.util.concurrent.CountDownLatch(1)
-        val receiver = AddonReceiver(scope, deliver = Dispatchers.IO)
-        val address = receiver.start(page, onStopped = { stopped.countDown() }) { }
-        assumeTrue("no local network address on this machine", address != null)
-        try {
-            val base = address!!.substringBeforeLast('/')
-            val token = address.substringAfterLast('/')
-            // What a browser asks for by itself is not a guess.
-            repeat(25) {
-                val icon = URL("$base/favicon.ico").openConnection() as HttpURLConnection
-                assertEquals(404, icon.responseCode)
-            }
-            assertEquals(200, (URL(address).openConnection() as HttpURLConnection).responseCode)
-            val guesses = listOf("abcd", "bcde", "cdef", "defg", "efgh", "fghj", "ghjk", "hjkm", "jkmn", "kmnp", "mnpq", "npqr",
-                "pqrs", "qrst", "rstu", "stuv", "tuvw", "uvwx", "vwxy", "wxyz", "xyz2").filter { it != token }.take(20)
-            guesses.forEach { guess ->
-                val wrong = URL("$base/$guess").openConnection() as HttpURLConnection
-                assertEquals(404, wrong.responseCode)
-            }
-            assertTrue(stopped.await(5, java.util.concurrent.TimeUnit.SECONDS))
-        } finally {
-            receiver.stop()
-            scope.cancel()
-        }
     }
 }

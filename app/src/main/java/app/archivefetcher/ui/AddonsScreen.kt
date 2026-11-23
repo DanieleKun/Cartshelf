@@ -1,9 +1,5 @@
 package app.archivefetcher.ui
 
-import android.content.ClipData
-import android.content.ClipboardManager
-import android.content.Context
-import android.widget.Toast
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -11,11 +7,6 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -96,8 +87,6 @@ fun AddonsScreen(vm: MainViewModel) {
                 Text(stringResource(R.string.addons_about), style = AppType.Caption)
             }
 
-            FromPhonePanel(vm)
-
             if (addons.isEmpty()) {
                 Text(stringResource(R.string.addons_none), style = AppType.Caption.copy(color = Palette.TextFaint))
             } else {
@@ -106,59 +95,6 @@ fun AddonsScreen(vm: MainViewModel) {
                     AddonCard(addon, onUpdate = { vm.updateAddon(addon.id) }, onRemove = { vm.removeAddon(addon.id) }, busy = vm.addonBusy)
                 }
             }
-        }
-    }
-}
-
-/**
- * Send an addon from the phone: the device shows a short local address, the phone opens it and pastes a link or
- * picks the file. The receiver stops as soon as this screen is left.
- */
-@Composable
-private fun FromPhonePanel(vm: MainViewModel) {
-    val context = LocalContext.current
-    DisposableEffect(Unit) { onDispose { vm.stopReceiver() } }
-    Panel(spacing = 10.dp) {
-        Overline(stringResource(R.string.receive_title))
-        val address = vm.receiverAddress
-        when {
-            address != null -> {
-                Text(stringResource(R.string.receive_open_on_phone), style = AppType.Caption)
-                Text(
-                    address,
-                    style = AppType.Title.copy(color = Palette.Accent, fontWeight = FontWeight.Bold),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Palette.SurfaceHigh, RoundedCornerShape(12.dp))
-                        .padding(horizontal = 14.dp, vertical = 12.dp),
-                )
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    AppButton(stringResource(R.string.receive_copy), { copyAddress(context, address) }, Modifier.weight(1f), icon = AppIcons.File)
-                    AppButton(stringResource(R.string.receive_stop), { vm.stopReceiver() }, Modifier.weight(1f), icon = AppIcons.Close)
-                }
-                Text(stringResource(R.string.receive_same_wifi), style = AppType.Caption.copy(color = Palette.TextFaint))
-                Text(stringResource(R.string.receive_trouble), style = AppType.Caption.copy(color = Palette.TextFaint))
-            }
-            else -> {
-                Text(stringResource(R.string.receive_body), style = AppType.Caption)
-                if (vm.receiverExpired) {
-                    Banner(stringResource(R.string.receive_expired), icon = AppIcons.Info, tint = Palette.Info)
-                }
-                if (vm.receiverUnavailable) {
-                    Banner(stringResource(R.string.receive_no_network), icon = AppIcons.Warning, tint = Palette.Warning)
-                }
-                AppButton(stringResource(R.string.receive_start), { vm.startReceiver() }, Modifier.fillMaxWidth(), icon = AppIcons.Download)
-            }
-        }
-        if (vm.receivedAddon != null) {
-            Banner(
-                stringResource(R.string.receive_got_file),
-                icon = AppIcons.File,
-                tint = Palette.Info,
-                action = stringResource(R.string.add_short),
-                onAction = { vm.installReceived() },
-            )
-            AppButton(stringResource(R.string.receive_discard), { vm.discardReceived() }, Modifier.fillMaxWidth())
         }
     }
 }
@@ -191,11 +127,4 @@ private fun AddonCard(addon: InstalledAddon, onUpdate: () -> Unit, onRemove: () 
             AppButton(stringResource(R.string.remove), onRemove, Modifier.weight(1f), icon = AppIcons.Delete)
         }
     }
-}
-
-/** Copies the receiving address, for when the phone is the same device or a chat app is easier than typing. */
-private fun copyAddress(context: Context, address: String) {
-    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-    clipboard.setPrimaryClip(ClipData.newPlainText("Cartshelf", address))
-    Toast.makeText(context, context.getString(R.string.receive_copied), Toast.LENGTH_SHORT).show()
 }

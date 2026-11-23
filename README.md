@@ -20,7 +20,6 @@ files. You are responsible for the addons you add and for what you download.
 - Multi-disc games are one entry in the list, and download together
 - Box art from the libretro-thumbnails project, with the same name fallbacks RetroArch uses (can be turned off)
 - Controller shortcuts: L1/R1 jump by letter, X search, Y select all, Start download, Select filters
-- Add an addon from your phone: open the address shown on the device in the phone's browser and paste the link or pick the file
 - The download queue survives restarts; a notice appears when a new version is out on GitHub
 - "Download later" list that can start by itself on Wi-Fi while charging, or at night
 - One library folder with a sub-folder per console, named for ES-DE / ArkOS / ROCKNIX, Batocera / Knulli, or in full
