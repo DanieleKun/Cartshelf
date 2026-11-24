@@ -34,6 +34,7 @@ import app.archivefetcher.addon.InstalledAddon
 /** Manage the catalogs the app knows: add an addon by its address or from a file, update or remove the installed ones. */
 @Composable
 fun AddonsScreen(vm: MainViewModel) {
+    val context = LocalContext.current
     val addons by vm.addons.collectAsState()
     val urlFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { urlFocus.requestFocusWhenReady() }
@@ -85,6 +86,14 @@ fun AddonsScreen(vm: MainViewModel) {
                     )
                 }
                 Text(stringResource(R.string.addons_about), style = AppType.Caption)
+                AppButton(
+                    stringResource(R.string.addons_get_first),
+                    { openLink(context, ADDONS_REPO_URL) },
+                    Modifier.fillMaxWidth(),
+                    highlighted = addons.isEmpty(),
+                    icon = AppIcons.Forward,
+                )
+                Text(stringResource(R.string.addons_get_first_hint), style = AppType.Caption.copy(color = Palette.TextFaint))
             }
 
             if (addons.isEmpty()) {
@@ -128,3 +137,5 @@ private fun AddonCard(addon: InstalledAddon, onUpdate: () -> Unit, onRemove: () 
         }
     }
 }
+
+private const val ADDONS_REPO_URL = "https://github.com/DanieleKun/Addon-Archive-Fetcher"

@@ -36,7 +36,6 @@
     <string name="err_addon_newer">questo addon richiede una versione più recente dell\'app</string>
     <string name="err_addon_invalid">il file non è un addon valido (%1$s)</string>
 
-    <string name="packs_failed">%1$d raccolta/e non caricata/e</string>
     <string name="no_packs">L\'addon non elenca raccolte per questa console.</string>
     <string name="no_results">Prova con meno parole o azzera i filtri.</string>
     <string name="search_hint">Cerca in questa console</string>
@@ -325,4 +324,13 @@
     <string name="update_available">È disponibile la versione %1$s.</string>
     <string name="update_up_to_date">Hai già l\'ultima versione (%1$s).</string>
     <string name="update_check_failed">Controllo non riuscito: verifica la connessione e riprova.</string>
+    <plurals name="packs_failed_count">
+        <item quantity="one">%d raccolta non è stata caricata</item>
+        <item quantity="other">%d raccolte non sono state caricate</item>
+    </plurals>
+    <string name="packs_details">Dettagli</string>
+    <string name="packs_hide">Nascondi</string>
+    <string name="packs_open_options">Apri le Opzioni</string>
+    <string name="addons_get_first">Trova l\'addon per Internet Archive</string>
+    <string name="addons_get_first_hint">Apre la pagina dell\'addon su GitHub nel browser. Da lì copia l\'indirizzo del file dell\'addon e incollalo qui sopra.</string>
 </resources>

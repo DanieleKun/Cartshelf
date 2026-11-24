@@ -9,21 +9,21 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
 /**
- * Dark, warm palette: ink-blue surfaces with a single signal-orange accent, like the power LED of a handheld.
+ * Dark palette: deep violet-ink surfaces with a single electric-violet accent, like the glow of a handheld screen.
  * Status colours are used only for status, never for decoration.
  */
 object Palette {
-    val Background = Color(0xFF0C0E12)
-    val Surface = Color(0xFF151920)
-    val SurfaceHigh = Color(0xFF1E232C)
-    val SurfaceFocus = Color(0xFF283040)
-    val Outline = Color(0xFF262C37)
-    val Accent = Color(0xFFFF8A3D)
-    val AccentSoft = Color(0x26FF8A3D)
-    val OnAccent = Color(0xFF241005)
-    val Text = Color(0xFFEFF2F6)
-    val TextDim = Color(0xFF9DA7B5)
-    val TextFaint = Color(0xFF677181)
+    val Background = Color(0xFF0E0D15)
+    val Surface = Color(0xFF17161F)
+    val SurfaceHigh = Color(0xFF212030)
+    val SurfaceFocus = Color(0xFF2E2B45)
+    val Outline = Color(0xFF2B2940)
+    val Accent = Color(0xFF9D8CFF)
+    val AccentSoft = Color(0x299D8CFF)
+    val OnAccent = Color(0xFF120C33)
+    val Text = Color(0xFFF1F0F8)
+    val TextDim = Color(0xFFA6A3BC)
+    val TextFaint = Color(0xFF71708A)
     val Danger = Color(0xFFFF6B6B)
     val Warning = Color(0xFFFFC44D)
     val Success = Color(0xFF4FD18B)
@@ -32,7 +32,7 @@ object Palette {
     /** Muted tints for the letter tiles of platforms and consoles; picked by a stable hash of the name. */
     val tiles = listOf(
         Color(0xFFE07A5F), Color(0xFF52B788), Color(0xFF6C9BEF), Color(0xFFD4A72C),
-        Color(0xFFB083E0), Color(0xFFE5687B), Color(0xFF4CC3B5), Color(0xFFE39B4B),
+        Color(0xFF9CC25A), Color(0xFFE5687B), Color(0xFF4CC3B5), Color(0xFFE39B4B),
     )
 }
 

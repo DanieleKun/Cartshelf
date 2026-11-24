@@ -40,7 +40,6 @@
     <string name="err_addon_invalid">the file is not a valid addon (%1$s)</string>
 
     <!-- Console view -->
-    <string name="packs_failed">%1$d collection(s) could not be loaded</string>
     <string name="no_packs">The addon lists no collections for this console.</string>
     <string name="no_results">Try fewer words, or clear the filters.</string>
     <string name="search_hint">Search this console</string>
@@ -337,4 +336,13 @@
     <string name="update_available">Version %1$s is available.</string>
     <string name="update_up_to_date">You already have the latest version (%1$s).</string>
     <string name="update_check_failed">The check failed: check your connection and try again.</string>
+    <plurals name="packs_failed_count">
+        <item quantity="one">%d collection could not be loaded</item>
+        <item quantity="other">%d collections could not be loaded</item>
+    </plurals>
+    <string name="packs_details">Details</string>
+    <string name="packs_hide">Hide</string>
+    <string name="packs_open_options">Open Options</string>
+    <string name="addons_get_first">Find the Internet Archive addon</string>
+    <string name="addons_get_first_hint">Opens the addon page on GitHub in your browser. Copy the address of the addon file from there and paste it above.</string>
 </resources>

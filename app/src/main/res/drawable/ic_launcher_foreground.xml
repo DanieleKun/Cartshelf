@@ -5,12 +5,12 @@
     android:viewportHeight="108">
     <!-- Kept inside the 66dp safe zone of adaptive icons. -->
     <path
-        android:fillColor="#FF8A3D"
+        android:fillColor="#9D8CFF"
         android:pathData="M42,28h21l9,9v35a8,8 0 0 1 -8,8h-22a8,8 0 0 1 -8,-8v-36a8,8 0 0 1 8,-8z" />
     <path
-        android:fillColor="#241005"
+        android:fillColor="#120C33"
         android:pathData="M50,38h8v14h7l-11,12l-11,-12h7z" />
     <path
-        android:fillColor="#241005"
+        android:fillColor="#120C33"
         android:pathData="M42,68h24v4h-24z" />
 </vector>

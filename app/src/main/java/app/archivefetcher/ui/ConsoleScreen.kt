@@ -230,7 +230,7 @@ private fun ConsoleContent(vm: MainViewModel, console: ConsoleInfo) {
                         Modifier.fillMaxSize(),
                         verticalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
-                        FailedPacksCard(library, vm::retryFailed)
+                        FailedPacksCard(library, vm::retryFailed, openOptions(vm))
                     }
                     library.files.isEmpty() -> EmptyState(
                         AppIcons.Gamepad,
@@ -378,7 +378,7 @@ private fun FileList(
             }
         }
         if (library.failedPacks.isNotEmpty()) {
-            item(key = "failed", span = { GridItemSpan(maxLineSpan) }) { FailedPacksCard(library, vm::retryFailed) }
+            item(key = "failed", span = { GridItemSpan(maxLineSpan) }) { FailedPacksCard(library, vm::retryFailed, openOptions(vm)) }
         }
         if (library.hasLocked && !vm.graph.prefs.hasAuth) {
             item(key = "locked", span = { GridItemSpan(maxLineSpan) }) {
@@ -429,19 +429,39 @@ private fun FileList(
     }
 }
 
-/** Names every collection that could not be loaded and why, with a retry for the ones that failed on the network. */
+/**
+ * Says that some collections could not be loaded. Folded to one line so the games stay in view; "Details" names each
+ * collection and why, and offers the account page when the reason may be a missing login.
+ */
 @Composable
-private fun FailedPacksCard(library: Library, onRetry: () -> Unit) {
-    Panel(border = Palette.Warning.copy(alpha = 0.35f)) {
+private fun FailedPacksCard(library: Library, onRetry: () -> Unit, onOpenOptions: (() -> Unit)?) {
+    var expanded by remember { mutableStateOf(false) }
+    Panel(border = Palette.Warning.copy(alpha = 0.35f), spacing = 8.dp) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Icon(AppIcons.Warning, contentDescription = null, tint = Palette.Warning, modifier = Modifier.padding(end = 2.dp))
-            Text(stringResource(R.string.packs_failed, library.failedPacks.size), style = AppType.Label)
+            Icon(AppIcons.Warning, contentDescription = null, tint = Palette.Warning, modifier = Modifier.size(20.dp))
+            Text(
+                pluralStringResource(R.plurals.packs_failed_count, library.failedPacks.size, library.failedPacks.size),
+                style = AppType.Label,
+                modifier = Modifier.weight(1f),
+            )
         }
-        library.failedPacks.forEach { pack ->
-            Text("${pack.entry.title}: ${pack.reason}", style = AppType.Caption, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            AppButton(
+                stringResource(if (expanded) R.string.packs_hide else R.string.packs_details),
+                { expanded = !expanded },
+                Modifier.weight(1f),
+            )
+            AppButton(stringResource(R.string.retry), onRetry, Modifier.weight(1f), icon = AppIcons.Refresh)
         }
-        Text(stringResource(R.string.packs_failed_hint), style = AppType.Caption.copy(color = Palette.TextFaint))
-        AppButton(stringResource(R.string.retry), onRetry, Modifier.fillMaxWidth(), icon = AppIcons.Refresh)
+        if (expanded) {
+            library.failedPacks.forEach { pack ->
+                Text("${pack.entry.title}: ${pack.reason}", style = AppType.Caption, maxLines = 3, overflow = TextOverflow.Ellipsis)
+            }
+            Text(stringResource(R.string.packs_failed_hint), style = AppType.Caption.copy(color = Palette.TextFaint))
+            if (onOpenOptions != null) {
+                AppButton(stringResource(R.string.packs_open_options), onOpenOptions, Modifier.fillMaxWidth(), icon = AppIcons.Forward)
+            }
+        }
     }
 }
 
@@ -562,3 +582,7 @@ private fun ActionBar(
 
 private val FILE_CELL_MIN_WIDTH = 320.dp
 private val COVER_SIZE = 52.dp
+
+/** The shortcut to the account page, offered only while no account or keys are saved. */
+private fun openOptions(vm: MainViewModel): (() -> Unit)? =
+    if (vm.graph.prefs.hasAuth) null else ({ vm.open(Screen.Settings) })

@@ -38,7 +38,7 @@ import app.archivefetcher.addon.CatalogCategory
 import app.archivefetcher.data.UpdateInfo
 import androidx.compose.ui.platform.LocalContext
 
-/** The app's mark: a cartridge-orange tile with the download arrow. */
+/** The app's mark: a violet cartridge tile with the download arrow. */
 @Composable
 fun BrandMark(size: Dp = 40.dp) {
     Box(Modifier.size(size).background(Palette.Accent, RoundedCornerShape(size * 0.28f)), contentAlignment = Alignment.Center) {
